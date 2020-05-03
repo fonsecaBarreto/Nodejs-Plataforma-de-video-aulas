@@ -5,7 +5,7 @@ module.exports = {
     connection: {
       database: 'mlinsdatabase',
       user:     'mlinsadmin',
-      password: '123456'
+      password: '123465'
     },
     pool: {
       min: 2,
