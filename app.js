@@ -8,4 +8,4 @@ const app = express();
 app.use("/files",express.static(__dirname+"/temp/uploads"))
 midlewares(app);
 routes(app);
-app.listen(PORT,()=>console.log("WORKING FINE ON" + PORT))
+app.listen(PORT,()=>console.log("WORKING FINE ON PORT: " + PORT))

@@ -4,7 +4,10 @@ exports.up = function(knex) {
     t.increments('id').unsigned().primary();
     t.string("username").notNull()
     t.string("password").notNull();
-    t.timestamp("created_at").default(knex.fn.now())
+    t.json("picture");
+    t.text("about")
+    t.timestamp("created_at").default(knex.fn.now());
+    t.timestamp("updated_at").default(knex.fn.now());
   })
 };
 

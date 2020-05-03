@@ -6,7 +6,9 @@ exports.up = function(knex) {
     t.string('email').notNull();
     t.string("password").notNull();
     t.json("profile").notNull();
-    t.timestamp("created_at").default(knex.fn.now())
+    t.string("fb").unsigned()
+    t.timestamp("created_at").default(knex.fn.now());
+    t.timestamp("updated_at").default(knex.fn.now());
   })
 };
 

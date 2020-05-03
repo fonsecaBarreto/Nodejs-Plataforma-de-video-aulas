@@ -1,11 +1,11 @@
-// Update with your config settings.
 
 module.exports = {
+
     client: 'postgresql',
     connection: {
-      database: 'mlinsdatabase',
-      user:     'mlinsadmin',
-      password: '123465'
+      database: 'icmdatabase',
+      user:     'icmuser',
+      password: '123456'
     },
     pool: {
       min: 2,
@@ -14,4 +14,5 @@ module.exports = {
     migrations: {
       tableName: 'knex_migrations'
     }
+
 };
