@@ -3,7 +3,6 @@ const express = require("express");
 const midlewares = require("./src/config/midlewares");
 const routes = require("./src/routes/routes");
 /*  */
-console.log(process.env.TEST)
 const PORT = process.env.PORT || 9000;
 const app = express();
 app.use("/files",express.static(__dirname+"/temp/uploads"))
