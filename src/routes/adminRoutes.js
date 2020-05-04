@@ -12,7 +12,6 @@ const updateModel =[
   check('password').isLength({ min: 6 }).withMessage('mínimo de 6 caracteres')
 ];
 Router.post("/signin",genToken)
-Router.post("/signup",creationModel,create)
 Router.post("/auth",validateToken,(req,res)=>{ res.json(req.admin)})
 Router.route("/")
   .get(validateToken,index)
