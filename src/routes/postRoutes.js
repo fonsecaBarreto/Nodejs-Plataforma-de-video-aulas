@@ -1,12 +1,12 @@
 const Router = require("express").Router()
-const {index,create,remove,indexById,indexByPath,concatViews,vote} = require("../api/post")
-const {image} = require("../api/Image");
+const {index,create,remove,indexById,indexByPath,indexByViews,vote} = require("../api/post")
 const {validateToken} = require("../api/admin");
-Router.post("/image",validateToken,image)
 
 Router.get("/path/:path",indexByPath)
-Router.put("/vote/:path",vote)
+Router.get("/views",indexByViews)
 
+
+Router.put("/vote/:path",vote)
 /* Router.put("/view/:path",concatViews) */
 
 Router.route("/")

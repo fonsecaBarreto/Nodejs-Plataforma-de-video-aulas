@@ -29,6 +29,7 @@ function localStorage(buffer,name){
 }
 const s3 = require("../config/aws.js")
 const uploadToAws = (buffer,name)=>{
+    console.log("now upload to aamazon s3")
     return new Promise(async (resolve,reject)=>{
         await s3.upload({
             Bucket:process.env.AWS_BUCKET,
@@ -37,37 +38,43 @@ const uploadToAws = (buffer,name)=>{
             Key:name,
             ACL:"public-read"
         }).promise()
-          .then(response=>{resolve(response.Location)})
-          .catch(err=>{ reject()}) 
+          .then(response=>{
+              console.log("response",response)
+            
+            
+            resolve(response.Location)})
+          .catch(err=>{
+              console.log(err)
+            reject()}) 
     })
 }
-/*  */
 const upload = multer({storage:multer.memoryStorage()});
+
 const image =async (req,res,next)=>{
+    console.log("image api")
     upload.single("image")(req,res,async (err)=>{
         try{
-            if(err) throw [400, err];
-            if(err || req.file==undefined) throw [400,"Image not found"]
-            const payload = await resize(req.file,{w:1080,h:.75});
-            if(process.env.NODE_ENV == "dev"){
-                console.log("ok dev mode")
-                const dir = "temp/uploads/"
-                await Promise.all(Object.keys(payload.buffers).map(async sfix=>{
-                    let buf = payload.buffers[sfix];
-                    let key = `${payload.key}-${sfix}.webp`
+            if(err || req.file==undefined) throw [422, err];
+            const w= req.query.w || 1080, h = req.query.h || .75;
+            const payload = await resize(req.file,{w,h});
+            const dir = "temp/uploads/"
+            
+            await Promise.all(Object.keys(payload.buffers).map(async sfix=>{
+                let buf = payload.buffers[sfix];
+                let key = `${payload.key}-${sfix}.webp`
+
+                if(process.env.NODE_ENV=="dev"){
                     await localStorage(buf,`${dir}${key}`)
                     .then(resp=>{payload[sfix]=`http://${req.headers.host}/files/${key}`})
                     .catch(err=> next([500,err]))
-                })) 
-            }else{
-                await Promise.all(Object.keys(payload.buffers).map(async sfix=>{
-                    let buf = payload.buffers[sfix];
-                    let key = `${payload.key}-${sfix}.webp`
-                    await ImageAPI.uploadToAws(buf,key)
+                }else{
+                    await uploadToAws(buf,key)
                     .then(resp=>{payload[sfix]=resp})
-                    .catch((err)=> next([500,err]))
-                })) 
-            }
+                    .catch(err=>{next([500,err])})
+                }
+            })) 
+            
+
             delete payload.buffers;
             res.json(payload)
         }catch(err){next(err)}

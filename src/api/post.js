@@ -1,5 +1,17 @@
 const conn = require("../config/sqlConnection");
 const {isNull, BuildError} = require("../api/validation")
+async function indexByViews(req,res,next){
+  try{
+    console.log("aqui")
+    const result= await conn("posts")
+    .select(["title","path","publication_date","views","category"])
+    .orderBy('views', 'desc')
+    .limit(req.query.l || 6)
+
+    console.log(result)
+    res.json(result)
+  }catch(err){next(err)}
+}
 async function indexByPath(req,res,next){
   try{
     const post =await conn("posts").where({path:req.params.path});
@@ -94,4 +106,4 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 }
-module.exports = {index,indexById,indexByPath,create,remove,concatViews,vote}
+module.exports = {index,indexById,indexByPath,indexByViews,create,remove,concatViews,vote}

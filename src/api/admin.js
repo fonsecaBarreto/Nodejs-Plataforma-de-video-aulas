@@ -1,38 +1,37 @@
 const conn = require("../config/sqlConnection");
-const {validationResult } = require('express-validator');
+const {isNull,isEmail,isString,BuildError} = require("../api/validation");
 const bcrypt = require("bcryptjs")
 async function create(req,res,next){
   try{  
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {throw [422,errors.array()]}
-    /*  */
-    var {username,password} = {...req.body}
+    console.log("create admin")
+    var {name,email,about,username,password,password_repeat,picture} = {...req.body}
     const id = req.params.id;
+    const errors = [];
+    if(isNull(name) || name.length < 6) errors.push(BuildError("Insira um nome valido com no mínimo 6 caracteres","name"))
+    if(isNull(email) || !isEmail(email)) errors.push(BuildError("Insira um e-mail valido","email"))
+    if(isNull(username) || username.length < 6) errors.push(BuildError("Insira um nome de usuario valido com no mínimo 6 caracteres","username"))
+    if(isNull(password) || username.length < 6) errors.push(BuildError("Insira uma senha valida com no mínimo 6 caracteres","password"))
+    if(isNull(password_repeat) || password_repeat != password) errors.push(BuildError("Senhas não coincidem","password_repeat"))
+    if(!isNull(about) && !isString(about)) errors.push(BuildError("Insira uma descrição valida","about"))
+    if(errors.length) throw[422,errors]
 
-    const sameUsername = await conn("admins").where({username})
-    if(sameUsername.length) throw [422,'usuario indisponivel']
-    
     var salt = bcrypt.genSaltSync(10);
     password = await bcrypt.hashSync(password,salt)
-
-    const fromdb = await conn("admins").insert({username,password}).returning(["id","username"])
-    res.json(fromdb[0])
+    if(!id){
+      const sameUsername = await conn("admins").where({username})
+      if(sameUsername.length) throw [422,'usuario indisponivel']
+      const result = await conn("admins").insert({name,email,about,username,password,picture}).returning(["id","name","username","email","about","picture"])
+      res.json(result[0])
+    }else{
+      const sameUserId = await conn("admins").where({id})
+      if(!sameUserId.length) throw [422,'usuario inexistente'];
+      const result = await conn("admins").update({name,email,about,username,password,picture}).where({id}).returning(["id","name","username","email","about","picture"]);
+      res.json(result[0])
+    }
   }catch(err){next(err)}
 }
-async function update(req,res,next){
-  try{
-    console.log("updating")
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {throw [422,errors.array()]}
-    var {username,password} = {...req.body}
-    const id = req.params.id;
-    /*  */
-    const sameUsername = await conn("admins").where({id})
-    if(!sameUsername.length) throw [422,'usuario inexistente'];
-    const result = await conn("admins").update({username,password}).where({id}).returning("*");
-    res.json(result[0])
-  }catch(err) {next(err)}
-}
+
+
 async function remove(req,res,next){
   try{
     const rows = await conn("admins").del().where({id:req.params.id});
@@ -42,7 +41,7 @@ async function remove(req,res,next){
 }
 async function index(req,res,next){
   try{
-    const admins = await conn("admins");
+    const admins = await conn("admins").select(["id","name","username","email","about","picture"]);
     res.json(admins)
   }catch(err){next(err)}
 }
@@ -58,8 +57,12 @@ async function genToken(req,res,next){
     const samePassword = await bcrypt.compareSync(password,sameUsername[0].password);
     if(samePassword !== true)throw [401, "Senha incorreta"]
     var payload={
-      id:sameUsername[0].id,
       username,
+      id:sameUsername[0].id,
+      name:sameUsername[0].name,
+      email:sameUsername[0].email,
+      about:sameUsername[0].about,
+      picture:sameUsername[0].picture,
       exp:Date.now()+(99999999)
     }
     const token = jwt.sign(payload,process.env.ADMIN_TOKEN_SECRET)
@@ -82,4 +85,4 @@ async function validateToken(req,res,next){
     } else{ throw [401, "Acesso negados"]}
   }catch(err){next(err)}
 }
-module.exports = {index,create,update,remove,genToken,validateToken}
+module.exports = {index,create,remove,genToken,validateToken}

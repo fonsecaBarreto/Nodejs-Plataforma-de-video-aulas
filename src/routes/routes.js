@@ -3,10 +3,12 @@ const Admin = require("./adminRoutes"),
       Category = require("./categoryRoutes"),
       Post = require("./postRoutes"),
       Exercises = require("./exercisesRoutes"),
-      EmailSignature = require("./EmailRoutes");
+      EmailSignature = require("./EmailRoutes"),
+      {image} = require("../api/Image");
 const facebook = require("../api/facebook");
 
 module.exports = app =>{
+  app.post("/image",image)
   app.get("/oauth",facebook.facebookcallback)
   app.use("/admins",Admin)
   app.use("/users",User)
