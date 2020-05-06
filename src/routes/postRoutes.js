@@ -1,8 +1,10 @@
 const Router = require("express").Router()
-const {index,create,remove,indexById,indexByPath,indexByViews,vote} = require("../api/post")
+const {index,create,remove,indexById,indexByPath,indexByViews,indexByDate,vote} = require("../api/post")
 const {validateToken} = require("../api/admin");
 
 Router.get("/path/:path",indexByPath)
+
+Router.get("/date",indexByDate)
 Router.get("/views",indexByViews)
 
 

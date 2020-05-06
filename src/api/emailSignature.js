@@ -1,5 +1,5 @@
 const conn = require("../config/sqlConnection")
-const {isNull,isString,BuildError} = require("../api/validation");
+const {isNull,isString,BuildError, isEmail} = require("../api/validation");
 
 async function index(req,res,next){
   try{
@@ -17,7 +17,7 @@ async function indexById(req,res,next){
 async function create(req,res,next){
   try{
     const {email} = {...req.body}
-    if(isNull(email))  throw [422,BuildError("E-mail ivalido","email")];
+    if(isNull(email) || !isEmail(email))  throw [422,BuildError("E-mail ivalido","email")];
     const signature = await conn('email-signature').insert({email}).returning(["email"]);
     return res.json(signature)
   }catch(err){next(err)}
