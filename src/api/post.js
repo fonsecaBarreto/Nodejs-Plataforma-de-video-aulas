@@ -56,7 +56,7 @@ async function indexRecommended(req,res,next){
 
 async function indexEditorChoice(req,res,next){
   try{
-    const list = await conn("editor_choices").where({ref:1}).first()
+    const list = await conn("websiteconfigs").where({ref:"favorites"}).first()
     const posts =await (conn("posts"))
     .where((builder) => builder.whereIn('id', list.content))
     .select(["title","path","publication_date","views","category","votes","picture","description"])

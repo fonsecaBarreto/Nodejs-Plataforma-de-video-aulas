@@ -4,7 +4,7 @@ const {isNull, BuildError, isObject} = require("./validation")
 async function index(req,res,next){
   try{
     const list = await conn("websiteconfigs").select("content").first()
-    if(list)res.json(list)
+    if(list) return res.json(list)
     throw 204
   }catch(err){next(err)}
 }
@@ -28,15 +28,15 @@ async function create(req,res,next){
     if(result.length){
       console.log("updating")
       const result = await conn("websiteconfigs").where({ref:"favorites"}).update({content:JSON.stringify([...seven])}).returning("*")
-      res.json(result)
+      return res.json(result)
     }else{
       console.log("creating new")
       const result = await conn("websiteconfigs").insert({ref:"favorites",content:JSON.stringify([...seven])}).returning("*")
-      res.json(result)
+      return res.json(result)
     }
 
 
-    res.sendStatus(200)
+    return res.sendStatus(200)
   }catch(err){next(err)}
 }
 
