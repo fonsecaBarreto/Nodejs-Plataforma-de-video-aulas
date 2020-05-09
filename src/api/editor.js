@@ -12,24 +12,31 @@ const description="favorites posts from editor"
 async function create(req,res,next){
   try{
     const {favorites} = {...req.body};
-    var errors = []
-    if(isNull(favorites) || !isObject(favorites)|| (isObject(favorites) && favorites.length < 7 ) ) errors.push(BuildError("lista de favoritos deve conter ao menos 7 artigos","favorites"));
+    var errors = [];
+    if(isNull(favorites) || !isObject(favorites) ) throw [422,BuildError("lista de favoritos deve conter ao menos 7 artigos","favorites")]
+    if(!isNull(favorites) && isObject(favorites) && favorites.length < 7 )  throw [422,BuildError("lista de favoritos deve conter ao menos 7 artigos","favorites")]
+
     await Promise.all( favorites.map(async f=>{
       let fromdb = await conn("posts").where({id:f}).first();
       if(!fromdb) errors.push(BuildError(`post id:${f} Inexistente`,"favorites"))
     }))
+    console.log(errors)
     if(errors.length) throw [422,errors];
-     var seven = favorites.filter( (f,i)=>(i<7))
-    try{
-      const exists  = await conn("editor_choices").where({ref:1}).first()
-      if(exists){
-        const post = await  conn("editor_choices").update({content:JSON.stringify(seven)}).where({ref:1}).returning(["content"]);
-        return res.json(post[0]);
-      }
-    }catch(err){ 
-      const post = await conn("editor_choices").insert({content:JSON.stringify(seven),ref:1,description}).returning(["content"]);
-      return res.json(post[0])
+    var seven = favorites.filter( (f,i)=>(i<7));
+    
+    const result   = await conn("websiteconfigs").where({ref:"favorites"})
+    if(result.length){
+      console.log("updating")
+      const result = await conn("websiteconfigs").where({ref:"favorites"}).update({content:JSON.stringify([...seven])}).returning("*")
+      res.json(result)
+    }else{
+      console.log("creating new")
+      const result = await conn("websiteconfigs").insert({ref:"favorites",content:JSON.stringify([...seven])}).returning("*")
+      res.json(result)
     }
+
+
+    res.sendStatus(200)
   }catch(err){next(err)}
 }
 

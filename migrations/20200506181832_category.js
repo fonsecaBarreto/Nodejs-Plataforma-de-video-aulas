@@ -4,7 +4,7 @@ exports.up = function(knex) {
     t.string("name").notNull();
     t.integer("parentId").references("id").inTable("categories")
     t.timestamp("created_at").default(knex.fn.now())
-    t.string("path")
+
   })
 };
 
