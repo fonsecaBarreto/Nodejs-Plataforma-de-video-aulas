@@ -3,9 +3,9 @@ const {isNull, BuildError, isObject} = require("./validation")
 
 async function index(req,res,next){
   try{
-    const list = await conn("editor_choices").select("content").first()
+    const list = await conn("websiteconfigs").select("content").first()
     if(list)res.json(list)
-    throw 422
+    throw 204
   }catch(err){next(err)}
 }
 const description="favorites posts from editor"
