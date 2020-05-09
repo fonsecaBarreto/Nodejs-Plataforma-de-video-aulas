@@ -29,7 +29,7 @@ function localStorage(buffer,name){
 }
 const s3 = require("../config/aws.js")
 const uploadToAws = (buffer,name)=>{
-    console.log("now upload to aamazon s3")
+
     return new Promise(async (resolve,reject)=>{
         await s3.upload({
             Bucket:process.env.AWS_BUCKET,
@@ -38,20 +38,14 @@ const uploadToAws = (buffer,name)=>{
             Key:name,
             ACL:"public-read"
         }).promise()
-          .then(response=>{
-              console.log("response",response)
-            
-            
-            resolve(response.Location)})
-          .catch(err=>{
-              console.log(err)
-            reject()}) 
+          .then(response=>{resolve(response.Location)})
+          .catch(err=>{reject()}) 
     })
 }
 const upload = multer({storage:multer.memoryStorage()});
 
 const image =async (req,res,next)=>{
-    console.log("image api")
+
     upload.single("image")(req,res,async (err)=>{
         try{
             if(err || req.file==undefined) throw [422, err];

@@ -1,4 +1,3 @@
-
 exports.up = function(knex) {
   return knex.schema.createTable("categories",t=>{
     t.increments("id").unsigned().primary();

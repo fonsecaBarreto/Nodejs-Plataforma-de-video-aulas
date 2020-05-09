@@ -1,6 +1,14 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError} = require("../api/validation");
-/*  */
+
+async function getName(id){
+  try{
+    const category = await conn("categories").where({id}).select(["name"]).first();
+    if(!category || !category.name) return null;
+    return category.name
+  }catch(err){return null}
+} 
+
 async function assemblePath(categories,categoryId,path=[]){
   if(path.length == 0)path.push(categoryId)
    await Promise.all(categories.map(async c=>{
@@ -20,10 +28,9 @@ const getPath = async (categoryId) =>{
 
 async function index(req,res,next){
   try{
-    var categories = await conn("categories").select(["id","name","parentId"]);
+    var categories = await conn("categories").select(["id","name","parentId","path"]);
     categories = await Promise.all(categories.map(async c=>{
-      c.subordinates = await getPath(c.id)
-      return c;
+      c.subordinates = await getPath(c.id);return c;
     }))
     res.json(categories)
   }catch(err){next(err)}
@@ -55,29 +62,25 @@ async function create(req,res,next){
       if(id !=null){ // means you are updating
         var subordinates = await getPath(id)
         if( subordinates.includes(parentId)) throw [422, "Categorias não podem ser Redigida a um Subordinado"];
-
-      }
-        
-       
+      }  
     }
-
+    const path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
+      .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+      
     if(id == undefined  || id == null){
 
       const sameName = await conn("categories").where({name}); // if post check is anme already exists
        if(sameName.length) throw [422, "categoria ja Registrada"];
-      const categoria = await conn('categories').insert({name,parentId}).returning(["id",'name',"parentId"]);
+      const categoria = await conn('categories').insert({name,parentId,path}).returning(["id",'name',"parentId"]);
       return res.json(categoria)
     }else{
 
-      const categoria = await conn("categories").update({name,parentId}).where({id}).returning(["id","name","parentId"]);
+      const categoria = await conn("categories").update({name,parentId,path}).where({id}).returning(["id","name","parentId"]);
       return res.json(categoria)
     }
     
   }catch(err){next(err)}
 }
-
-
-
 async function remove(req,res,next){
   try{
     const childs = await conn("categories").where({parentId:req.params.id});
@@ -91,8 +94,6 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 }
-
-
 const toTree = async(categories,tree)=>{
   if(!tree) tree = await categories.filter(c=>(!c.parentId));
   tree = await Promise.all(tree.map(async parent=>{
@@ -109,4 +110,4 @@ async function getJsonTree(req,res,next){
   }catch(err){next(err)}
 }
 
-module.exports = {index,create,remove,indexById,getJsonTree}
+module.exports = {index,create,remove,indexById,getJsonTree,getName}

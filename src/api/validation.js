@@ -1,10 +1,15 @@
 const email = require("email-validator")
+
 function isNull(value){
   if(!value || value === undefined || value === null) return true;
   return false;
 }
 function isString(value){
   if (typeof value == "string") return true;
+  return false
+}
+function isObject(value){
+  if (typeof value == "object") return true;
   return false
 }
 function isNumber(value){
@@ -17,4 +22,5 @@ function BuildError(msg,param){
 function isEmail(mail){
   return email.validate(mail)
 }
-module.exports = {isEmail, isNull,isString,isNumber,BuildError}
+
+module.exports = {isEmail, isNull,isString,isNumber,BuildError,isObject}

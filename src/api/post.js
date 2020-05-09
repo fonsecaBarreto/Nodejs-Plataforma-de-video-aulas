@@ -1,45 +1,7 @@
 const conn = require("../config/sqlConnection");
-const {isNull, BuildError} = require("../api/validation")
-async function indexByDate(req,res,next){
-  try{
-    const result= await conn("posts")
-    .select(["title","path","publication_date","views","category","votes","picture"])
-    .orderBy('publication_date', 'desc')
-    .offset(req.query.o || 0)
-    .limit(req.query.l || 6)
-    console.log(result)
-    res.json(result)
-  }catch(err){next(err)}
-}
-async function indexByViews(req,res,next){
-  try{
-    console.log("aqui")
-    const result= await conn("posts")
-    .select(["title","path","publication_date","views","category","votes"])
-    .orderBy('views', 'desc')
-    .limit(req.query.l || 6)
-
-    console.log(result)
-    res.json(result)
-  }catch(err){next(err)}
-}
-async function indexByPath(req,res,next){
-  try{
-    const post =await conn("posts").where({path:req.params.path});
-    if(!post.length) throw [422,"post Inexistente"]
-    await conn("posts").where({path:req.params.path}).update({views:post[0].views+1})
-
-    res.json(post[0])
-  }catch(err){next(err)}
-}
-async function concatViews(req,res,next){
-  try{
-     ("concating a view")
-    const {views} =await conn("posts").where({path:req.params.path}).select("views").first(); 
-    await conn("posts").where({path:req.params.path}).update({views:views+1})
-    res.sendStatus(204)
-  }catch(err){next(err)}
-}
+const {isNull, BuildError, isEmail} = require("../api/validation")
+const {getAuthor} = require("../api/admin");
+const {getName} = require("../api/category");
 async function vote(req,res,next){
   try{
     const voto =  (req.query.v == undefined || (req.query.v != "up" && req.query.v != "down")) ? "up" : req.query.v;
@@ -49,10 +11,80 @@ async function vote(req,res,next){
     res.sendStatus(204) 
   }catch(err){next(err)}
 }
-async function index(req,res,next){
+async function indexByDate(req,res,next){
   try{
-    const post = await conn("posts");
-    res.json(post)
+    const count = await conn("posts").count().first()
+    const articles= await conn("posts")
+    .select(["title","path","publication_date","views","category","votes","picture","description"])
+    .orderBy('publication_date', 'desc')
+    .offset(req.query.o || 0)
+    .limit(req.query.l || 6)
+
+    res.json({articles,...count})
+  }catch(err){next(err)}
+}
+async function indexByCategory(req,res,next){
+  try{
+    const category = await conn("categories").where({path:req.params.path}).select("id").first();
+    if(category && category.id){
+      const posts =await conn("posts").where({category:category.id}).select(["title","path","publication_date","views","category","votes","picture","description"]);
+      if(!posts.length) throw [422,"post Inexistente"];
+      return res.json(posts)
+    }
+
+  }catch(err){next(err)}
+}
+async function indexRecommended(req,res,next){
+  try{
+ 
+    const post = await conn("posts").where({path:req.params.path}).select('category').first();
+    const category = await conn("categories").where({id:post.category}).select("id").first();
+    if(category && category.id){
+      const posts =await conn("posts")
+      .where({category:category.id})
+      .whereNot({path:req.params.path})
+      .orderBy('views', 'desc')
+      .offset(req.query.o || 0)
+      .limit(req.query.l || 8)
+      .select(["title","path","publication_date","views","category","votes","picture","description"]);
+      if(!posts.length) throw [422,"post Inexistente"];
+      return res.json(posts)
+    }
+
+  }catch(err){next(err)}
+}
+
+async function indexEditorChoice(req,res,next){
+  try{
+    const list = await conn("editor_choices").where({ref:1}).first()
+    const posts =await (conn("posts"))
+    .where((builder) => builder.whereIn('id', list.content))
+    .select(["title","path","publication_date","views","category","votes","picture","description"])
+    .limit(req.query.l || 7)
+    if(!posts.length) throw [500, "Não encontrado"];
+    res.json(posts)
+  }catch(err){next(err)}
+}
+async function indexByViews(req,res,next){
+  try{
+  
+    const result= await conn("posts")
+    .select(["title","path","publication_date","views","category","votes"])
+    .orderBy('views', 'desc')
+    .limit(req.query.l || 6)
+
+
+    res.json(result)
+  }catch(err){next(err)}
+}
+async function indexByPath(req,res,next){
+  try{
+    const post =await conn("posts").where({path:req.params.path}).first();
+    if(!post) throw [422,"post Inexistente"];
+    if(!isNull(post.author)) post.author = await getAuthor(post.author)
+    if(!isNull(post.category)) post.category = await getName(post.category)
+    await conn("posts").where({path:req.params.path}).update({views:post.views+1})
+    return res.json(post)
   }catch(err){next(err)}
 }
 async function indexById(req,res,next){
@@ -62,9 +94,19 @@ async function indexById(req,res,next){
     res.json(post[0])
   }catch(err){next(err)}
 }
+
+async function index(req,res,next){
+  console.log(req.protocol)
+  try{
+    const post = await conn("posts");
+    res.json(post)
+  }catch(err){next(err)}
+}
 async function create(req,res,next){
   try{
-    const {title,description,content,keys,category,picture,author,publication_date} = {...req.body};
+    const {title,description,content,keys,category,picture,author} = {...req.body};
+
+  
     const id = req.params.id;
     const errors = [];
     if(isNull(title) || (title && title.length < 6)) errors.push(BuildError("Titulo deve conter ao menos 6 caracteres","title"));
@@ -73,20 +115,12 @@ async function create(req,res,next){
     if(isNull(keys)) errors.push(BuildError("'keys' não encontrada","keys"));
     if(!isNull(category) && isNaN(category)) errors.push(BuildError("Categoria Invalida","category"));
     if(!isNull(picture) && typeof picture != "object") errors.push(BuildError("Categoria Invalida","picture"));
-    if(!isNull(author) && isNaN(author)) errors.push(BuildError("Autor Invalido","author"));
-    if(!isNull(publication_date) ){
-      
-      !isNaN(Date.parse("some date test"))
-      //
-      !isNaN(Date.parse("22/05/2001"))  // true
-    return res.json(!isNaN(Date.parse(publication_date))) 
-      errors.push(BuildError("Data de publicação Invalido","publication_date"));
-    } 
+    if(!isNull(author) && !isEmail(author)) errors.push(BuildError("Autor Invalido","author"));
 
     if(errors.length) throw [422,errors];
     
     if(!isNull(author)){
-      const categoryExists = await conn("admins").where({id:author});
+      const categoryExists = await conn("admins").where({email:author});
       if(!categoryExists.length) throw [422, "Administrador inexistente"]
     }
     if(!isNull(category)){
@@ -99,10 +133,10 @@ async function create(req,res,next){
 
 
     if(id == undefined){
-      const post = await conn("posts").insert({title,description,content,keys,category,picture,path,author,publication_date}).returning(['id',"title","description","content","keys","category","picture","path"]);
+      const post = await conn("posts").insert({title,description,content,keys,category,picture,path,author}).returning(['id',"title","description","content","keys","category","picture","path"]);
       res.json(post)
     }else{
-      const post = await  conn("posts").update({title,description,content,keys,category,picture,path,publication_date}).where({id}).returning(['id',"title","description","content","keys","category","picture","path"]);
+      const post = await  conn("posts").update({title,description,content,keys,category,picture,path,author}).where({id}).returning(['id',"title","description","content","keys","category","picture","path"]);
       res.json(post);
        (post)
     }
@@ -117,4 +151,4 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 }
-module.exports = {index,indexById,indexByPath,indexByViews,create,remove,concatViews,vote,indexByDate}
+module.exports = {index,indexById,indexByPath,indexByViews,create,remove,vote,indexByDate,indexEditorChoice,indexByCategory,indexRecommended}

@@ -1,4 +1,3 @@
-
 exports.up = function(knex) {
   return knex.schema.createTable("posts",t=>{
     t.increments('id').unsigned().primary();
@@ -12,7 +11,7 @@ exports.up = function(knex) {
     t.integer("votes").default(0);
     t.string("path").notNull().default("");
     t.json("attachments");
-    t.integer("author").references('id').inTable("admins");
+    t.string("author").references('email').inTable("admins");
     t.json('responses');
     t.date('publication_date').notNull().default(knex.fn.now())
     t.integer("category").references('id').inTable("categories");

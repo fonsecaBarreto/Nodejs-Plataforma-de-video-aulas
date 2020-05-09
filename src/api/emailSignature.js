@@ -1,6 +1,6 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError, isEmail} = require("../api/validation");
-
+var normalizeEmail = require('normalize-email')
 async function index(req,res,next){
   try{
     var signature = await conn("email-signature");
@@ -16,8 +16,13 @@ async function indexById(req,res,next){
 }
 async function create(req,res,next){
   try{
-    const {email} = {...req.body}
-    if(isNull(email) || !isEmail(email))  throw [422,BuildError("E-mail ivalido","email")];
+    var {email} = {...req.body}
+    if(isNull(email) || !isEmail(email))  throw [422,"Existe algo de errado com o e-mail inserido, verifique!"];
+    email = normalizeEmail(email);
+
+    const fromdb = await conn("email-signature").where({email}).first();
+    if(fromdb) throw [422, "E-mail já cadastrado"]
+    
     const signature = await conn('email-signature').insert({email}).returning(["email"]);
     return res.json(signature)
   }catch(err){next(err)}

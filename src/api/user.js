@@ -11,7 +11,7 @@ async function index(req, res, next) {
   }
 }
 async function create(req, res, next) {
-  console.log("trying to create a new user")
+
   try {
 
     var { name,email,password,profile={}} = {...req.body}
@@ -54,7 +54,7 @@ async function remove(req, res, next) {
 /* session */
 const jwt = require("jsonwebtoken");
 async function genToken(req, res, next) {
-  console.log("generating a token")
+
   try {
     var {email, password} = {...req.body};
     const errors = []
@@ -67,9 +67,7 @@ async function genToken(req, res, next) {
     const user = sameEmail[0];
 
     const samePassword = await bcrypt.compareSync(password, user.password);
-    console.log(password)
-    console.log(user.password)
-    console.log(samePassword)
+
     if (samePassword !== true) throw [401, "Senha incorreta"] 
     var payload = {
       id: user.id,

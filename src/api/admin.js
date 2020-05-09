@@ -1,6 +1,21 @@
 const conn = require("../config/sqlConnection");
 const {isNull,isEmail,isString,BuildError} = require("../api/validation");
 const bcrypt = require("bcryptjs")
+
+
+async function getAuthor(email){
+  try{
+    const admin = await conn("admins")
+    .where({email:email})
+    .select(["name","email","about","picture"])
+    .first()
+    if(!admin) return null
+    return admin
+  }catch(err){
+    return null
+  }
+}
+
 async function create(req,res,next){
   try{  
     console.log("create admin")
@@ -30,13 +45,18 @@ async function create(req,res,next){
     }
   }catch(err){next(err)}
 }
-
-
 async function remove(req,res,next){
   try{
     const rows = await conn("admins").del().where({id:req.params.id});
     if(rows.length == 0) throw 406;
     res.sendStatus(204)
+  }catch(err){next(err)}
+}
+async function indexByEmail(req,res,next){
+  try{
+    const admin = await getAuthor(req.params.email);
+    if(admin && admin.length)
+    res.json(admin[0])
   }catch(err){next(err)}
 }
 async function index(req,res,next){
@@ -63,7 +83,7 @@ async function genToken(req,res,next){
       email:sameUsername[0].email,
       about:sameUsername[0].about,
       picture:sameUsername[0].picture,
-      exp:Date.now()+(99999999)
+      exp:Date.now()+(999999999999)
     }
     const token = jwt.sign(payload,process.env.ADMIN_TOKEN_SECRET)
     res.json({accessToken:token})
@@ -85,4 +105,4 @@ async function validateToken(req,res,next){
     } else{ throw [401, "Acesso negados"]}
   }catch(err){next(err)}
 }
-module.exports = {index,create,remove,genToken,validateToken}
+module.exports = {getAuthor,index,indexByEmail,create,remove,genToken,validateToken}
