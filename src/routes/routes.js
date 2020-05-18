@@ -1,21 +1,26 @@
 const Admin = require("./adminRoutes"),
-      User = require("./userRoutes"),
       Category = require("./categoryRoutes"),
       Post = require("./postRoutes"),
       Exercises = require("./exercisesRoutes"),
       EmailSignature = require("./EmailRoutes"),
-      {image} = require("../api/Image");
-const facebook = require("../api/facebook");
 
+      students_routes = require("./studentRoutes"),
+      modules_router = require("./moduleRoutes"),
+      exercises_router = require("./exercisesRoutes"),
+      reply_router = require("./replyRoutes"),
+      {image} = require("../api/Image");
 module.exports = app =>{
   app.post("/image",image)
-  app.get("/oauth",facebook.facebookcallback)
   app.use("/admins",Admin)
-  app.use("/users",User)
   app.use("/categories",Category)
   app.use("/posts",Post)
   app.use("/exercises",Exercises)
   app.use("/emailsignature",EmailSignature)
+
+  app.use("/students",students_routes)
+  app.use("/modules",modules_router)
+  app.use("/exercises", exercises_router)
+  app.use("/exercisesreplies", reply_router)
   app.use((req,res,next)=>next(404))
   app.use((error,req,res,next)=>{
     if(!isNaN(error))return res.sendStatus(error)

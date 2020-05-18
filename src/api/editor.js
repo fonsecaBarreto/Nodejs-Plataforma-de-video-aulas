@@ -34,9 +34,6 @@ async function create(req,res,next){
       const result = await conn("websiteconfigs").insert({ref:"favorites",content:JSON.stringify([...seven])}).returning("*")
       return res.json(result)
     }
-
-
-    return res.sendStatus(200)
   }catch(err){next(err)}
 }
 

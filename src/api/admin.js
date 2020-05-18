@@ -83,7 +83,7 @@ async function genToken(req,res,next){
       email:sameUsername[0].email,
       about:sameUsername[0].about,
       picture:sameUsername[0].picture,
-      exp:Date.now()+(999999999999)
+      exp: Date.now() + (1296**9)
     }
     const token = jwt.sign(payload,process.env.ADMIN_TOKEN_SECRET)
     res.json({accessToken:token})
@@ -92,6 +92,8 @@ async function genToken(req,res,next){
 
 async function validateToken(req,res,next){
   try{
+    console.log("validation?")
+    
     const authorizationHeader = req.headers.authorization
     if(!authorizationHeader || authorizationHeader === undefined) throw [401,"Acesso Negado"];
     const parts = authorizationHeader.split(" ");
