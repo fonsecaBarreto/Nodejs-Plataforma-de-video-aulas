@@ -9,8 +9,12 @@ const Admin = require("./adminRoutes"),
       exercises_router = require("./exercisesRoutes"),
       reply_router = require("./replyRoutes"),
       {image} = require("../api/Image");
+const adminAPi = require("../api/admin");
+const studentAPi = require("../api/student");
 module.exports = app =>{
-  app.post("/image",image)
+  app.post("/image",adminAPi.validateToken, image)
+  app.post("/profilepic",studentAPi.validateToken,image)
+
   app.use("/admins",Admin)
   app.use("/categories",Category)
   app.use("/posts",Post)

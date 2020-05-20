@@ -4,8 +4,8 @@ const {validateToken} = require( "../api/admin")
 const student  = require("../api/student")
 
 /*  make here routes to studente aget the exerciseses */
-Router.route("/all",student.validateToken,index)
-Router.route("/bymodule/:",student.validateToken,indexByModule)
+Router.get("/all",student.validateToken,index)
+Router.get("/module/:path",student.validateToken,indexByModule)
 
 
 /*  admins  */

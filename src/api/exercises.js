@@ -1,8 +1,22 @@
 const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isObject, isString, isNumber} = require("../api/validation")
+const {indexByStudent_Module} = require("../api/exercisereply")
+
 async function indexByModule(req,res,next){
   try{
-    const exercises = await conn("exercises").where({module:req.params.module});
+    console.log("indexing by module")
+    const path = req.params.path;
+    const m = await conn("modules").where({path:path}).select('id').first();
+    if(!m) throw [422,"Módulo inexistente"];
+    const exercises = await conn("exercises").where({module:m.id});
+    if(exercises && exercises.length){
+      await Promise.all(exercises.map(async e=>{
+        try{
+          const reply = await conn("exercisesreplies").where({student:req.user.id,exercise:e.id}).first()
+          if(reply) e.reply = reply
+        }catch(err){}
+      }))
+    }
     return res.json(exercises)
   }catch(err){next(err)}
 }

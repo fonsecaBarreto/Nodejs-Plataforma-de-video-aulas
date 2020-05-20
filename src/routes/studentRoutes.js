@@ -1,11 +1,18 @@
 const Router = require("express").Router()
 const admin = require("../api/admin")
-
-const {index,create,remove,genToken,validateToken} = require("../api/student");
-
+const {index,create,remove,genToken,validateToken,
+  updatePassword,indexTopPoints,updateSelf}
+   = require("../api/student");
+/* public */
+Router.post("/signin",genToken);
+/* users*/
 Router.post("/auth",validateToken,(req,res)=>{res.json(req.user)}) 
-Router.post("/signin",genToken);// generate token // validate 
-/* private */
+Router.put("/update",validateToken,updateSelf)
+Router.put("/updatepassword",validateToken,updatePassword)
+
+
+Router.get("/ranking",validateToken,indexTopPoints) 
+/* private admins*/
 Router.route("/")
   .get(admin.validateToken,index)
   .post(admin.validateToken,create)

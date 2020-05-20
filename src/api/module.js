@@ -1,11 +1,11 @@
 const conn = require("../config/sqlConnection")
-const {isNull,isString,BuildError} = require("../api/validation");
+const {isNull,isString,BuildError,isObject} = require("../api/validation");
 
 
 /*  */
 async function index(req,res,next){
   try{
-    var modules = await conn("modules").select(["id","name","parentId","path","description"]);
+    var modules = await conn("modules").select(["id","name","parentId","path","description","picture"]);
     if(modules.length){
       modules = await Promise.all(modules.map(async c=>{
         c.subordinates = await getPath(c.id);return c;
@@ -14,9 +14,38 @@ async function index(req,res,next){
     res.json(modules)
   }catch(err){next(err)}
 }
+async function indexModuleChilds(req,res,next){
+  try{
+    const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
+    var modules = await conn("modules").where({parentId:id}).select(["id","name","path","description","picture"]);
+    res.json({name,description,children:[...modules]})
+  }catch(err){next(err)}
+}
+async function indexModuleExercises(req,res,next){
+  try{
+    const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
+    const exercises = await conn("exercises").where({module:id});
+    if(exercises && exercises.length){
+      await Promise.all(exercises.map(async e=>{
+        try{
+          const reply = await conn("exercisesreplies").where({student:req.user.id,exercise:e.id}).first()
+          if(reply) e.reply = reply
+        }catch(err){}
+      }))
+    }
+    res.json({name,description,children:[...exercises]})
+  }catch(err){next(err)}
+}
+async function indexPrime(req,res,next){
+  try{
+    var modules = await conn("modules").where({parentId:null}).select(["id","name","path","description","picture"]);
+    res.json(modules)
+  }catch(err){next(err)}
+}
+
 async function indexById(req,res,next){
   try{
-    const module = await conn("modules").where({id:req.params.id}).select(["id","name","parentId","description"]).first();
+    const module = await conn("modules").where({id:req.params.id}).select(["id","name","parentId","description","picture"]).first();
     if(!module) throw [422, "Modulo Inexistente"];
     module.subordinates= await getPath(module.id);
     res.json(module)
@@ -25,12 +54,12 @@ async function indexById(req,res,next){
 /*  */
 async function create(req,res,next){
   try{
-    const {name,parentId,description} = {...req.body}
+    const {name,parentId,description,picture} = {...req.body}
     const id = req.params.id
     const errors = [];
     if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
-
-    if(isNull(name) || !isString(name)) errors.push(BuildError("Nome ivalido","name"));
+    if(!isNull(picture) && !isObject(picture)) errors.push(BuildError("Formato de imagem inapropriado", "id"));
+    if(isNull(name) || !isString(name)) errors.push(BuildError("Nome iválido","name"));
     if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
     if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
     if(errors.length) throw [422,errors]
@@ -49,14 +78,14 @@ async function create(req,res,next){
       
     console.log(name,description,path)
     if(id == undefined  || id == null){
-      console.log("insertin a new one")
+      console.log(picture)
       const sameName = await conn("modules").where({name}); // if post check is anme already exists
       if(sameName.length) throw [422, "Modulo ja Registrada"];
 
-      const modules = await conn('modules').insert({name,parentId,path,description}).returning(["id",'name',"parentId","description"]);
+      const modules = await conn('modules').insert({name,parentId,path,description,picture}).returning(["id",'name',"parentId","description","picture"]);
       return res.json(modules)
     }else{
-      const modules = await conn("modules").update({name,parentId,path,description}).where({id}).returning(["id","name","parentId","description"]);
+      const modules = await conn("modules").update({name,parentId,path,description,picture}).where({id}).returning(["id","name","parentId","description","picture"]);
       return res.json(modules)
     }
     
@@ -73,8 +102,6 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 } 
-
-
 /*  */
 const toTree = async(modules,tree)=>{
   if(!tree) tree = await modules.filter(c=>(!c.parentId));
@@ -86,7 +113,7 @@ const toTree = async(modules,tree)=>{
 }
 async function getJsonTree(req,res,next){
   try{
-    const modules = await conn("modules").select(["id","name","parentId","description"]);
+    const modules = await conn("modules").select(["id","name","parentId","description","picture"]);
     var tree = await toTree(modules);
     res.json(tree); 
   }catch(err){next(err)}
@@ -116,4 +143,4 @@ const getPath = async (id) =>{ //get the subodinates path
   path = await assemblePath(modules,id)
   return path
 } 
-module.exports = {index,create,remove,indexById,getJsonTree,getName}
+module.exports = {index,create,remove,indexById,getJsonTree,getName,indexPrime,indexModuleChilds,indexModuleExercises}

@@ -96,7 +96,6 @@ async function indexById(req,res,next){
 }
 
 async function index(req,res,next){
-  console.log(req.protocol)
   try{
     const post = await conn("posts");
     res.json(post)

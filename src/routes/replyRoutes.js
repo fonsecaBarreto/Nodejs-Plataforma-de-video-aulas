@@ -8,7 +8,7 @@ const student = require("../api/student")
 Router.post("/send/:exercise",student.validateToken,create)
 
 /* admins routess */
-Router.get("/student/:student",indexByStudent)
+Router.get("/student/:student",validateToken,indexByStudent)
 Router.post("/correct/:id",validateToken,closeCase)
 Router.route("/")
   .get(validateToken,index)

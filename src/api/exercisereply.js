@@ -13,6 +13,15 @@ async function indexById(req,res,next){
     res.json(replies)
   }catch(err){next(err)}
 }
+/* async function indexByStudent_Module(student,module){
+  try{
+    console.log(student,module)
+    var replies = await conn("exercisesreplies").where({student}).select("*");
+    console.log(replies)
+    if(replies.length)return replies;
+    return null;
+  }catch(err){return null}
+} */
 async function indexByStudent(req,res,next){
   try{
     var replies = await conn("exercisesreplies").where({student:req.params.student}).select("*");
@@ -56,7 +65,7 @@ async function create(req,res,next){
     const replyexists = await conn("exercisesreplies").where({student,exercise}).select("closed").first();
     if(replyexists && replyexists.closed == true)throw [422, "Essa questão ja foi feita"];
     
-    var solved = false;
+    var solved = null;
     var closed = false;
     if(exercisesExists[0].type == "1"){ //if multipla escolha
       if(answer.option == null) throw [400,"Resposta desconhecida"];
@@ -68,6 +77,8 @@ async function create(req,res,next){
         if(answer.option == corret_answer){
           solved=true
           concatPoints(student,exercise)
+        }else{
+          solved =false;
         }
         closed=true;
       }
@@ -76,10 +87,10 @@ async function create(req,res,next){
     }
     if(replyexists){
       const reply = await conn("exercisesreplies").where({exercise,student}).update({solved,closed,exercise,student,answer,attachment,feedback}).returning("*")
-      return res.json(reply)
+      return res.json(reply[0])
     }else{
       const reply = await conn("exercisesreplies").insert({solved,closed,exercise,student,answer,attachment,feedback}).returning("*");
-      return res.json(reply)
+      return res.json(reply[0])
     }
 
   
@@ -100,11 +111,8 @@ async function closeCase(req,res,next){//admin fuciton
     const reply = await conn("exercisesreplies").where({id}).select("exercise").first()
     if(!reply || reply.closed==true) throw [406,"Indisponivel"]
 
-    
-
-
     const retorno = await conn("exercisesreplies").where({id}).update({solved,feedback,closed:true}).returning(["student","exercise"])
-    concatPoints(retorno[0].student,retorno[0].exercise)
+    if(solved === true) concatPoints(retorno[0].student,retorno[0].exercise)
 
     res.json(retorno[0])
   }catch(err){next(err)}
