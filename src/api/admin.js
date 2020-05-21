@@ -92,8 +92,6 @@ async function genToken(req,res,next){
 
 async function validateToken(req,res,next){
   try{
-    console.log("validation?")
-    
     const authorizationHeader = req.headers.authorization
     if(!authorizationHeader || authorizationHeader === undefined) throw [401,"Acesso Negado"];
     const parts = authorizationHeader.split(" ");
