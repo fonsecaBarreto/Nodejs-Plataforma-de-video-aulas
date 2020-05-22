@@ -1,7 +1,7 @@
 const {isNull, BuildError, isString , isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
 const conn = require("../config/sqlConnection");
-
+var normalizeEmail = require('normalize-email')
 async function concatPoints(student,exercise){
   try{
     const {achievement} = await conn("exercises").where({id:exercise}).select("achievement").first()
@@ -39,12 +39,11 @@ async function updateSelf(req,res,next){
     if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Invalido","email"));
     if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("imagem com formato desconhecido","picture"))
     if (errors.length) throw [422, errors];
-  
+    email = normalizeEmail(email);
     const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
     if((await studentSameEmail).length) throw [422, "ja existe um outro usuario com o mesmo endereço de email"]
   
     const result = await conn("students").update({picture,name,email}).where({id}).returning(["id","name","email","points","picture"]);
-
     const token = await generateToken(result[0])
     res.json({accessToken: token})
    
@@ -95,6 +94,7 @@ async function create(req, res, next) {
     .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
     const salt = bcrypt.genSaltSync(10);
     password = await bcrypt.hashSync(password, salt)
+    email = normalizeEmail(email);
     if(isNull(id)){
       const result = await conn("students").insert({picture,name,email,password,points,notes,path}).returning(["path","id","name","email","points","picture"]);
       res.json(result[0])
@@ -170,13 +170,16 @@ async function validateToken(req, res, next) {
 }
 async function indexTopPoints(req,res,next){
   try {
-    var users = await conn("students").select(["name","points","notes","picture","path"])
+    //,"points","notes","picture","path"
+    var {id,name,points,picture} = {...req.user};
+    var all = await conn("students").select(["id","points"]).orderBy("points","desc");
+    var position = all.findIndex((s)=>s.id == id);
+    var ranking = await conn("students").select(["name","points","picture","id"])
     .orderBy('points', 'desc')
     .limit(10)
-    res.json(users)
-  } catch (err) {
-    next(err)
-  }
+    ranking  = [...ranking, null,null,null,null,null,null,null,null,null,null].filter((u,i)=>i<10)
+    res.json({user:{id,name,points,picture,position},ranking})
+  } catch (err) {next(err)}
 }
 module.exports = {
   indexTopPoints,

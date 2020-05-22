@@ -3,20 +3,23 @@ const {index,create,remove,indexById,indexByPath,indexByViews,indexByDate,indexE
 const editor = require("../api/editor")
 const {validateToken} = require("../api/admin");
 
+
+//blog --- >
 Router.get("/path/:path",indexByPath) // post from path
 Router.get("/recommended/:path",indexRecommended) // recommended posts by path(category)
+
 Router.get("/category/:path",indexByCategory) // posts from chosen category
 Router.get("/date",indexByDate)  // feed
 Router.get("/views",indexByViews) // most popular
-
 Router.get("/favorites",indexEditorChoice)
 
+
+//Router.put("/vote/:path",vote)
+
+//ge the ids
 Router.route("/editor")
-  .get(editor.index)
-  .put(validateToken,editor.create)
-
-
-Router.put("/vote/:path",vote)
+  .get(validateToken, editor.index)
+  .put(validateToken, editor.create)
 
 Router.route("/")
   .get(index)

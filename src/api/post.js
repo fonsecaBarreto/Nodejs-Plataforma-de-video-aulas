@@ -2,6 +2,8 @@ const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isEmail} = require("../api/validation")
 const {getAuthor} = require("../api/admin");
 const {getName} = require("../api/category");
+
+
 async function vote(req,res,next){
   try{
     const voto =  (req.query.v == undefined || (req.query.v != "up" && req.query.v != "down")) ? "up" : req.query.v;
@@ -14,21 +16,32 @@ async function vote(req,res,next){
 async function indexByDate(req,res,next){
   try{
     const count = await conn("posts").count().first()
-    const articles= await conn("posts")
+    var articles= await conn("posts")
     .select(["title","path","publication_date","views","category","votes","picture","description"])
     .orderBy('publication_date', 'desc')
     .offset(req.query.o || 0)
     .limit(req.query.l || 6)
-
+    articles = await Promise.all(articles.map(async p=>{
+      const {name} = await conn("categories").select("name").where({id:p.category}).first();
+      p.categoryname =name;
+      p.category=undefined;
+      return p;
+    }))
     res.json({articles,...count})
   }catch(err){next(err)}
 }
 async function indexByCategory(req,res,next){
   try{
-    const category = await conn("categories").where({path:req.params.path}).select("id").first();
+    const category = await conn("categories").where({path:req.params.path}).select(["id","name"]).first();
+
     if(category && category.id){
-      const posts =await conn("posts").where({category:category.id}).select(["title","path","publication_date","views","category","votes","picture","description"]);
-      if(!posts.length) throw [422,"post Inexistente"];
+      var posts =await conn("posts").where({category:category.id}).select(["title","path","publication_date","views","category","votes","picture","description"]);
+      if(posts && posts.length) {
+        posts = await Promise.all(posts.map(async p=>{
+          p.categoryname = category.name
+          return p;
+        }));
+      } 
       return res.json(posts)
     }
 
@@ -38,16 +51,20 @@ async function indexRecommended(req,res,next){
   try{
  
     const post = await conn("posts").where({path:req.params.path}).select('category').first();
-    const category = await conn("categories").where({id:post.category}).select("id").first();
+    const category = await conn("categories").where({id:post.category}).select("id","name").first();
     if(category && category.id){
-      const posts =await conn("posts")
+      var posts =await conn("posts")
       .where({category:category.id})
       .whereNot({path:req.params.path})
       .orderBy('views', 'desc')
       .offset(req.query.o || 0)
       .limit(req.query.l || 8)
-      .select(["title","path","publication_date","views","category","votes","picture","description"]);
-      if(!posts.length) throw [422,"post Inexistente"];
+      .select(["title","path","publication_date","views","votes","picture","description","category"]);
+      posts = await Promise.all(posts.map(async p=>{
+        if(!isNull(post.category)) p.categoryname = await getName(post.category)
+        return p;
+      }))
+
       return res.json(posts)
     }
 
@@ -57,33 +74,43 @@ async function indexRecommended(req,res,next){
 async function indexEditorChoice(req,res,next){
   try{
     const list = await conn("websiteconfigs").where({ref:"favorites"}).first()
-    const posts =await (conn("posts"))
+    var posts =await (conn("posts"))
     .where((builder) => builder.whereIn('id', list.content))
     .select(["title","path","publication_date","views","category","votes","picture","description"])
     .limit(req.query.l || 7)
-    if(!posts.length) throw [500, "Não encontrado"];
+  
+    posts = await Promise.all(posts.map(async (p)=>{
+      p.categoryname = await getName(p.category)
+      return p;
+    }))
+
     res.json(posts)
   }catch(err){next(err)}
 }
 async function indexByViews(req,res,next){
   try{
-  
-    const result= await conn("posts")
-    .select(["title","path","publication_date","views","category","votes"])
-    .orderBy('views', 'desc')
-    .limit(req.query.l || 6)
+    var result= await conn("posts")
+      .select(["title","path","publication_date","views","category","votes"])
+      .orderBy('views', 'desc')
+      .limit(req.query.l || 6)
 
+    result = await Promise.all(result.map(async (p)=>{
+      p.categoryname = await getName(p.category)
+      return p;
+    }))
 
     res.json(result)
   }catch(err){next(err)}
 }
 async function indexByPath(req,res,next){
   try{
-    const post =await conn("posts").where({path:req.params.path}).first();
+    
+    var post =await conn("posts").where({path:req.params.path}).first();
     if(!post) throw [422,"post Inexistente"];
     if(!isNull(post.author)) post.author = await getAuthor(post.author)
-    if(!isNull(post.category)) post.category = await getName(post.category)
+    if(!isNull(post.category)) post.categoryname = await getName(post.category)
     await conn("posts").where({path:req.params.path}).update({views:post.views+1})
+
     return res.json(post)
   }catch(err){next(err)}
 }
