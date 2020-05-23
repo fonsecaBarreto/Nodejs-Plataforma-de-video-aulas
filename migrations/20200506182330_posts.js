@@ -11,11 +11,12 @@ exports.up = function(knex) {
     t.integer("votes").default(0);
     t.string("path").notNull().default("");
     t.json("attachments");
-    t.string("author").references('email').inTable("admins");
     t.json('responses');
+    t.integer("author").references('id').inTable("admins")
     t.date('publication_date').notNull().default(knex.fn.now())
     t.integer("category").references('id').inTable("categories");
-    t.timestamp("created_at").default(knex.fn.now())
+    t.timestamp("created_at").default(knex.fn.now());
+    t.timestamp("updated_at").default(knex.fn.now());
   })
 
 };

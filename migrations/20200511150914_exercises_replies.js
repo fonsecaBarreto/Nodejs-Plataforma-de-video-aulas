@@ -9,7 +9,8 @@ exports.up = function(knex) {
     t.json("feedback");
     t.boolean("closed").default(false)
     t.boolean("solved").default(false)
-    t.timestamp("created_at").default(knex.fn.now())
+    t.timestamp("created_at").default(knex.fn.now());
+    t.timestamp("updated_at").default(knex.fn.now());
   })
 };
 

@@ -22,9 +22,10 @@ async function indexByDate(req,res,next){
     .offset(req.query.o || 0)
     .limit(req.query.l || 6)
     articles = await Promise.all(articles.map(async p=>{
-      const {name} = await conn("categories").select("name").where({id:p.category}).first();
-      p.categoryname =name;
-      p.category=undefined;
+      if(p.category != null){
+        const {name} = await conn("categories").select("name").where({id:p.category}).first();
+        p.categoryname =name;
+      }
       return p;
     }))
     res.json({articles,...count})
@@ -78,9 +79,10 @@ async function indexEditorChoice(req,res,next){
     .where((builder) => builder.whereIn('id', list.content))
     .select(["title","path","publication_date","views","category","votes","picture","description"])
     .limit(req.query.l || 7)
-  
     posts = await Promise.all(posts.map(async (p)=>{
-      p.categoryname = await getName(p.category)
+      if(p.category != null){
+        p.categoryname = await getName(p.category)
+      }
       return p;
     }))
 
@@ -95,7 +97,9 @@ async function indexByViews(req,res,next){
       .limit(req.query.l || 6)
 
     result = await Promise.all(result.map(async (p)=>{
-      p.categoryname = await getName(p.category)
+      if(p.category != null){
+        p.categoryname = await getName(p.category)
+      }
       return p;
     }))
 
@@ -130,7 +134,9 @@ async function index(req,res,next){
 }
 async function create(req,res,next){
   try{
-    const {title,description,content,keys,category,picture,author} = {...req.body};
+    if(!req.admin) throw [401, "Acesso Negado"]
+    const author = req.admin.id;
+    const {title,description,content,keys,category,picture} = {...req.body};
 
   
     const id = req.params.id;
@@ -141,14 +147,9 @@ async function create(req,res,next){
     if(isNull(keys)) errors.push(BuildError("'keys' não encontrada","keys"));
     if(!isNull(category) && isNaN(category)) errors.push(BuildError("Categoria Invalida","category"));
     if(!isNull(picture) && typeof picture != "object") errors.push(BuildError("Categoria Invalida","picture"));
-    if(!isNull(author) && !isEmail(author)) errors.push(BuildError("Autor Invalido","author"));
-
+  
     if(errors.length) throw [422,errors];
     
-    if(!isNull(author)){
-      const categoryExists = await conn("admins").where({email:author});
-      if(!categoryExists.length) throw [422, "Administrador inexistente"]
-    }
     if(!isNull(category)){
       const categoryExists = await conn("categories").where({id:category});
       if(!categoryExists.length) throw [422, "Categoria inexistente"]

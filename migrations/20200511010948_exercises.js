@@ -7,9 +7,11 @@ exports.up = function(knex) {
     t.json("options")
     t.json("resolution")
     t.text("tip");
-    t.json("attachment")
+    t.json("attachment");
+    t.integer("notation")
     t.integer("achievement").notNull()
     t.timestamp("created_at").default(knex.fn.now())
+    t.timestamp("updated_at").default(knex.fn.now());
   })
 };
 

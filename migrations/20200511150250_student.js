@@ -8,6 +8,8 @@ exports.up = function(knex) {
     t.string("password").notNull();
     t.integer("points").default(0);
     t.text("notes").default("")
+    t.integer("level").default(0)
+    t.string("path").notNull().default(knex.fn.now())
     t.timestamp("created_at").default(knex.fn.now());
     t.timestamp("updated_at").default(knex.fn.now());
   })

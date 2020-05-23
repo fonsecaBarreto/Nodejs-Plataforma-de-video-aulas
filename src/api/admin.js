@@ -1,12 +1,11 @@
 const conn = require("../config/sqlConnection");
 const {isNull,isEmail,isString,BuildError} = require("../api/validation");
-const bcrypt = require("bcryptjs")
-
-
-async function getAuthor(email){
+const bcrypt = require("bcryptjs");
+var normalizeEmail = require('normalize-email')
+async function getAuthor(id){
   try{
     const admin = await conn("admins")
-    .where({email:email})
+    .where({id:id})
     .select(["name","email","about","picture"])
     .first()
     if(!admin) return null
@@ -18,18 +17,21 @@ async function getAuthor(email){
 
 async function create(req,res,next){
   try{  
-    console.log("create admin")
+    console.log("trying to create a admin user")
+  
     var {name,email,about,username,password,password_repeat,picture} = {...req.body}
     const id = req.params.id;
     const errors = [];
     if(isNull(name) || name.length < 6) errors.push(BuildError("Insira um nome valido com no mínimo 6 caracteres","name"))
     if(isNull(email) || !isEmail(email)) errors.push(BuildError("Insira um e-mail valido","email"))
     if(isNull(username) || username.length < 6) errors.push(BuildError("Insira um nome de usuario valido com no mínimo 6 caracteres","username"))
-    if(isNull(password) || username.length < 6) errors.push(BuildError("Insira uma senha valida com no mínimo 6 caracteres","password"))
+    if(isNull(password) || password.length < 6) errors.push(BuildError("Insira uma senha valida com no mínimo 6 caracteres","password"))
     if(isNull(password_repeat) || password_repeat != password) errors.push(BuildError("Senhas não coincidem","password_repeat"))
     if(!isNull(about) && !isString(about)) errors.push(BuildError("Insira uma descrição valida","about"))
     if(errors.length) throw[422,errors]
+  
     email = normalizeEmail(email);
+
     var salt = bcrypt.genSaltSync(10);
     password = await bcrypt.hashSync(password,salt)
 
@@ -53,13 +55,13 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 }
-async function indexByEmail(req,res,next){
+/* async function indexByEmail(req,res,next){
   try{
     const admin = await getAuthor(req.params.email);
     if(admin && admin.length)
     res.json(admin[0])
   }catch(err){next(err)}
-}
+} */
 async function index(req,res,next){
   try{
     const admins = await conn("admins").select(["id","name","username","email","about","picture"]);
@@ -106,4 +108,4 @@ async function validateToken(req,res,next){
     } else{ throw [401, "Acesso negados"]}
   }catch(err){next(err)}
 }
-module.exports = {getAuthor,index,indexByEmail,create,remove,genToken,validateToken}
+module.exports = {getAuthor,index,create,remove,genToken,validateToken}
