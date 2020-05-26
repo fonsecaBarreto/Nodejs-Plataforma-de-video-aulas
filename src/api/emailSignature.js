@@ -1,10 +1,14 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError, isEmail} = require("../api/validation");
 var normalizeEmail = require('normalize-email')
+async function find(){
+  const emails = await conn("email-signature");
+  return emails;
+}
 async function index(req,res,next){
   try{
    
-    var signature = await conn("email-signature");
+    var signature = await conn("email-signature").select(["email","id"]);
     res.json(signature)
   }catch(err){next(err)}
 }
@@ -25,7 +29,7 @@ async function create(req,res,next){
     const fromdb = await conn("email-signature").where({email}).first();
     if(fromdb) throw [422, "E-mail já cadastrado"]
     
-    const signature = await conn('email-signature').insert({email}).returning(["email"]);
+    const signature = await conn('email-signature').insert({email}).returning(["email","id"]);
     return res.json(signature)
   }catch(err){next(err)}
 }
@@ -40,4 +44,4 @@ async function remove(req,res,next){
 
 
 
-module.exports = {index,create,remove,indexById}
+module.exports = {find,index,create,remove,indexById}
