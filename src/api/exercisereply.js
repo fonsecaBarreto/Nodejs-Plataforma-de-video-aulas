@@ -13,15 +13,7 @@ async function indexById(req,res,next){
     res.json(replies)
   }catch(err){next(err)}
 }
-/* async function indexByStudent_Module(student,module){
-  try{
-    console.log(student,module)
-    var replies = await conn("exercisesreplies").where({student}).select("*");
-    console.log(replies)
-    if(replies.length)return replies;
-    return null;
-  }catch(err){return null}
-} */
+
 async function indexByStudent(req,res,next){
   try{
     var replies = await conn("exercisesreplies").where({student:req.params.student}).select("*");
@@ -35,8 +27,7 @@ async function indexByStudent(req,res,next){
     res.json(replies)
   }catch(err){next(err)}
 }
-//index exercises replies by modules
-//index also exercises by modules after...
+
 async function remove(req,res,next){
   try{
     const rows = await conn("exercisesreplies").del().where({id:req.params.id});
@@ -99,20 +90,24 @@ async function create(req,res,next){
 
 async function closeCase(req,res,next){//admin fuciton
   try{
-    const {feedback,solved} = {...req.body}
+  
+    var {feedback,solved,achievement} = {...req.body}
     const id = req.params.id;
     const errors = [];
     if(isNull(feedback) || !isObject(feedback)) errors.push(BuildError("Valor de gabarito invalido","feedback"))
     if(solved == null) errors.push(BuildError("Correto ou não?","solved"))
     if(isNull(id)) errors.push(BuildError("Avaliação não identificada","id"))
+    if(!isNull(achievement) && isNaN(achievement)) errors.push(BuildError("Valor de achievement deve ser um numero inteiro","feedback")) 
     if(errors.length) throw [422,errors]
-    
-
     const reply = await conn("exercisesreplies").where({id}).select("exercise").first()
     if(!reply || reply.closed==true) throw [406,"Indisponivel"]
 
-    const retorno = await conn("exercisesreplies").where({id}).update({solved,feedback,closed:true}).returning(["student","exercise"])
-    if(solved === true) concatPoints(retorno[0].student,retorno[0].exercise)
+    console.log(achievement)
+    if(!solved) achievement=null;
+    const retorno = await conn("exercisesreplies").where({id}).update({solved,feedback,closed:true,achievement}).returning(["*"])
+    retorno[0].exercise = await (conn("exercises").where({id:retorno[0].exercise})).first();
+
+    if(solved === true) concatPoints(retorno[0].student,retorno[0].exercise,achievement)
 
     res.json(retorno[0])
   }catch(err){next(err)}

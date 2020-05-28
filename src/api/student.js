@@ -2,11 +2,14 @@ const {isNull, BuildError, isString , isEmail, isObject} = require("./validation
 const bcrypt = require("bcryptjs");
 const conn = require("../config/sqlConnection");
 var normalizeEmail = require('normalize-email')
-async function concatPoints(student,exercise){
+async function concatPoints(student,exercise,achievement){
   try{
-    const {achievement} = await conn("exercises").where({id:exercise}).select("achievement").first()
+    if(achievement == null)
+      var {achievement} = await conn("exercises").where({id:exercise}).select("achievement").first();
+    
+    achievement = Number(achievement)
     const {points} =   await conn("students").where({id:student}).first().select("points");
-    const atualizado = await conn("students").where({id:student}).update({points:points+achievement}).returning("*")
+    await conn("students").where({id:student}).update({points:points+achievement}).returning("*")
     return true
   }catch(err){return null}
 }

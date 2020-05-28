@@ -36,9 +36,15 @@ async function indexById(req,res,next){
 async function remove(req,res,next){
   try{
     //check if there is replies to it;
+   console.log("removindg")
     const id = req.params.id;
+    const force=  req.query.f;
     const replies = await conn("exercisesreplies").where({exercise:id})
-    if(replies.length) throw [422,"Existem respostas a esse exercicio, apague-as primeiro"]
+    if(force !== "true" && replies.length) throw [422,"Existem respostas a esse exercicio, apague-as primeiro"];
+    else if( force === "true" && replies.length){
+      const exercisesrows = await conn("exercisesreplies").del().where({exercise:id});
+      if(exercisesrows == undefined || exercisesrows == null || exercisesrows === 0 ) throw [406,"Operação mal sucedida -  Não foi possivel apagar os exercisios respectivos."];
+    }
     const rows = await conn("exercises").del().where({id});
     if(rows == undefined || rows == null || rows === 0 ) throw 406;
     res.sendStatus(204)
