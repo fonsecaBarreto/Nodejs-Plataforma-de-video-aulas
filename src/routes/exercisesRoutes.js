@@ -1,5 +1,5 @@
 const Router = require("express").Router()
-const {index,create,remove,indexById,indexByModule} = require("../api/exercises");
+const {index,create,remove,indexById,indexByModule,archive} = require("../api/exercises");
 const {validateToken} = require( "../api/admin")
 const student  = require("../api/student")
 
@@ -7,10 +7,11 @@ const student  = require("../api/student")
 Router.get("/all",student.validateToken,index)
 Router.get("/module/:path",student.validateToken,indexByModule)
 
-
 /*  admins  */
+Router.put("/archive/:id",validateToken,archive)
+
 Router.route("/")
-  .get(validateToken,index)
+.get(validateToken,index)
   .post(validateToken, create)
 Router.route("/:id")
   .get(validateToken, indexById)

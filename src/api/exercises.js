@@ -1,7 +1,20 @@
 const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isObject, isString, isNumber} = require("../api/validation")
-const {indexByStudent_Module} = require("../api/exercisereply")
-
+const {indexByStudent_Module} = require("../api/exercisereply");
+const selectQuery =["enunciation","type","options","resolution","tip","attachment","achievement","module","id","restriction","archived"]
+async function archive(req,res,next){
+  try{
+    const {archived} = {...req.body}
+    const id = req.params.id;
+    const errors =[];
+    if(archive == null || archive == undefined || (typeof archived != "boolean")) errors.push(new BuildError("Defina uma valor Válido Para 'Arquivado'","archived"))
+    if(errors.length) throw [422,errors]
+    var exerciseexists = await conn("exercises").where({id}).select('id');
+    if(!exerciseexists && !exerciseexists.length) throw (404,"Exercisio invalido");
+    const exercise = await conn("exercises").update({archived}).where({id}).returning(selectQuery)
+    return res.json(exercise)
+  }catch(err){next(err)}
+}
 async function indexByModule(req,res,next){
   try{
     console.log("indexing by module")
@@ -22,13 +35,23 @@ async function indexByModule(req,res,next){
 }
 async function index(req,res,next){
   try{
-    const exercises = await conn("exercises").select(["enunciation","type","options","resolution","tip","attachment","achievement","module","id"]);
+
+    var exercises = await conn("exercises").select(selectQuery);
+    if (exercises.length){
+
+      exercises = await Promise.all( exercises.map(async e=>{
+        e.modulename= (await conn("modules").select("name").where({id:e.module}).first()).name
+        return e;
+      }))
+
+    }
+    
     return res.json(exercises)
   }catch(err){next(err)}
 }
 async function indexById(req,res,next){
   try{
-    const exercise = await conn("exercises").where({id:req.params.id}).select(["enunciation","type","options","resolution","tip","attachment","achievement","module","id"]).first();
+    const exercise = await conn("exercises").where({id:req.params.id}).select(selectQuery).first();
     if(! exercise ) throw [422, "exercício inexistente"]
     res.json(exercise)
   }catch(err){next(err)}
@@ -93,4 +116,4 @@ async function create(req,res,next){
   }catch(err){next(err)}
 }
 
-module.exports = {index,indexById,indexByModule,create,remove}
+module.exports = {index,indexById,indexByModule,create,remove,archive}
