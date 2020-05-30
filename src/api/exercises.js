@@ -1,7 +1,7 @@
 const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isObject, isString, isNumber} = require("../api/validation")
 const {indexByStudent_Module} = require("../api/exercisereply");
-const selectQuery =["enunciation","type","options","resolution","tip","attachment","achievement","module","id","restriction","archived"]
+const selectQuery =["notation","enunciation","type","options","resolution","tip","attachment","achievement","module","id","restriction","archived"]
 async function archive(req,res,next){
   try{
     const {archived} = {...req.body}
@@ -17,11 +17,13 @@ async function archive(req,res,next){
 }
 async function indexByModule(req,res,next){
   try{
-    console.log("indexing by module")
     const path = req.params.path;
     const m = await conn("modules").where({path:path}).select('id').first();
     if(!m) throw [422,"Módulo inexistente"];
-    const exercises = await conn("exercises").where({module:m.id});
+    const exercises = await conn("exercises")
+    .where({module:m.id})
+    .orderBy('module','cresc')
+    .orderBy('notation', 'cresc')
     if(exercises && exercises.length){
       await Promise.all(exercises.map(async e=>{
         try{
@@ -36,9 +38,11 @@ async function indexByModule(req,res,next){
 async function index(req,res,next){
   try{
 
-    var exercises = await conn("exercises").select(selectQuery);
+    var exercises = await conn("exercises")
+    .select(selectQuery)
+    .orderBy('module','cresc')
+    .orderBy('notation', 'cresc')
     if (exercises.length){
-
       exercises = await Promise.all( exercises.map(async e=>{
         e.modulename= (await conn("modules").select("name").where({id:e.module}).first()).name
         return e;
@@ -80,7 +84,7 @@ const TYPES={
 async function create(req,res,next){
   try{
     console.log("creating")
-    var {enunciation,type,module,options,resolution,tip,attachment,achievement=25} = {...req.body};
+    var {notation,enunciation,type,module,options,resolution,tip,attachment,achievement=25} = {...req.body};
     var id = req.params.id;
     const errors = [];
 
@@ -97,6 +101,7 @@ async function create(req,res,next){
       options=null;
       resolution=null;
     }
+    if(!isNull(notation) && isNaN(notation))errors.push(BuildError("Numeração Inválida)","notation"));
     if(!isNull(tip) && !isString(tip))errors.push(BuildError("A Dica deve ser um valor Textual Valido (Não Obrigatorio)","tip"));
     if(!isNull(attachment) && !isObject(attachment) )errors.push(BuildError("Anexo contem um formato desconhecido","attachment"));
     if(errors.length) throw [ 422, errors];
@@ -107,10 +112,12 @@ async function create(req,res,next){
     
    
     if(id == undefined){
-      const exercise = await conn("exercises").insert({enunciation,type,options,resolution,tip,attachment,achievement,module}).returning(["*"]);
+      const exercise = await conn("exercises")
+        .insert({notation,enunciation,type,options,resolution,tip,attachment,achievement,module}).returning(["*"]);
       res.json(exercise)
     }else{
-      const exercise = await conn("exercises").update({enunciation,type,options,resolution,tip,attachment,achievement,module}).where({id}).returning(["*"]);
+      const exercise = await conn("exercises")
+        .update({notation,enunciation,type,options,resolution,tip,attachment,achievement,module}).where({id}).returning(["*"]);
       res.json(exercise) 
     } 
   }catch(err){next(err)}

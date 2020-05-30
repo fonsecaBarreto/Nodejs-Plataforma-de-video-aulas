@@ -5,7 +5,9 @@ const {isNull,isString,BuildError,isObject} = require("../api/validation");
 /*  */
 async function index(req,res,next){
   try{
-    var modules = await conn("modules").select(["id","name","parentId","path","description","picture"]);
+    var modules = await conn("modules")
+    .select(["id","notation","name","parentId","path","description","picture"])
+    .orderBy('notation', 'cresc')
     if(modules.length){
       modules = await Promise.all(modules.map(async c=>{
         c.subordinates = await getPath(c.id);return c;
@@ -17,7 +19,9 @@ async function index(req,res,next){
 async function indexModuleChilds(req,res,next){
   try{
     const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
-    var modules = await conn("modules").where({parentId:id}).select(["id","name","path","description","picture"]);
+    var modules = await conn("modules").where({parentId:id})
+    .select(["id","name","path","description","picture","notation"])
+    .orderBy('notation', 'cresc')
     res.json({name,description,children:[...modules]})
   }catch(err){next(err)}
 }
@@ -38,7 +42,9 @@ async function indexModuleExercises(req,res,next){
 }
 async function indexPrime(req,res,next){
   try{
-    var modules = await conn("modules").where({parentId:null}).select(["id","name","path","description","picture"]);
+    var modules = await conn("modules").where({parentId:null})
+    .select(["id","name","path","description","picture","notation"])
+    .orderBy('notation', 'cresc')
     res.json(modules)
   }catch(err){next(err)}
 }
@@ -54,10 +60,11 @@ async function indexById(req,res,next){
 /*  */
 async function create(req,res,next){
   try{
-    const {name,parentId,description,picture} = {...req.body}
+    const {name,parentId,description,picture,notation} = {...req.body}
     const id = req.params.id
     const errors = [];
     if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
+    if(!isNull(notation) && isNaN(notation)) errors.push(BuildError("Numeração invalida", "notation"));
     if(!isNull(picture) && !isObject(picture)) errors.push(BuildError("Formato de imagem inapropriado", "id"));
     if(isNull(name) || !isString(name)) errors.push(BuildError("Nome iválido","name"));
     if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
@@ -75,17 +82,17 @@ async function create(req,res,next){
     }
     const path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
       .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-      
-    console.log(name,description,path)
+    console.log(notation)
+  
     if(id == undefined  || id == null){
-      console.log(picture)
+   
       const sameName = await conn("modules").where({name}); // if post check is anme already exists
       if(sameName.length) throw [422, "Modulo ja Registrada"];
 
-      const modules = await conn('modules').insert({name,parentId,path,description,picture}).returning(["id",'name',"parentId","description","picture"]);
+      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation}).returning(["id","notation",'name',"parentId","description","picture"]);
       return res.json(modules)
     }else{
-      const modules = await conn("modules").update({name,parentId,path,description,picture}).where({id}).returning(["id","name","parentId","description","picture"]);
+      const modules = await conn("modules").update({name,parentId,path,description,picture,notation}).where({id}).returning(["id","notation","name","parentId","description","picture"]);
       return res.json(modules)
     }
     
@@ -113,7 +120,9 @@ const toTree = async(modules,tree)=>{
 }
 async function getJsonTree(req,res,next){
   try{
-    const modules = await conn("modules").select(["id","name","parentId","description","picture"]);
+    const modules = await conn("modules")
+    .select(["notation","id","name","parentId","description","picture"])
+    .orderBy('notation', 'cresc')
     var tree = await toTree(modules);
     res.json(tree); 
   }catch(err){next(err)}
