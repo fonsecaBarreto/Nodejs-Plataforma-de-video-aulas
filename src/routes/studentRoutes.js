@@ -10,7 +10,7 @@ Router.post("/auth",validateToken,(req,res)=>{res.json(req.user)})
 Router.put("/update",validateToken,updateSelf)
 Router.put("/updatepassword",validateToken,updatePassword)
 
-Router.post("/autocreate",generatestudents)
+/* Router.post("/autocreate",generatestudents) */
 Router.get("/ranking",validateToken,indexTopPoints) 
 /* private admins*/
 Router.route("/")

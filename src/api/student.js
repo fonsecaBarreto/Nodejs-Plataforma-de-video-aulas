@@ -184,7 +184,7 @@ async function indexTopPoints(req,res,next){
     res.json({user:{id,name,points,picture,position},ranking})
   } catch (err) {next(err)}
 }
-async function generatestudents(req,res,next){
+/* async function generatestudents(req,res,next){
   const emails = [
     "josilva2422@gmail.com",
     "edson_m.calazans@hotmail.com",
@@ -236,7 +236,7 @@ async function generatestudents(req,res,next){
   res.json(done)
   
   
-}
+} */
 module.exports = {
   indexTopPoints,
   index,
