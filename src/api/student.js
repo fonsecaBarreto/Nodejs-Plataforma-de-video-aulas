@@ -173,8 +173,8 @@ async function validateToken(req, res, next) {
 }
 async function indexTopPoints(req,res,next){
   try {
-    //,"points","notes","picture","path"
-    var {id,name,points,picture} = {...req.user};
+    var {id} = {...req.user};
+    const {name,points,picture} = await conn("students").select("id","name","points","picture").where({id}).first()
     var all = await conn("students").select(["id","points"]).orderBy("points","desc");
     var position = all.findIndex((s)=>s.id == id);
     var ranking = await conn("students").select(["name","points","picture","id"])
