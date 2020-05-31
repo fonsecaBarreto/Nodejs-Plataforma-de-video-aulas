@@ -246,6 +246,5 @@ module.exports = {
   validateToken,
   concatPoints,
   updatePassword,
-  updateSelf,
-  generatestudents
+  updateSelf
 }

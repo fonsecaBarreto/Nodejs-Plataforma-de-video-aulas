@@ -1,6 +1,6 @@
 const Router = require("express").Router()
 const admin = require("../api/admin")
-const {index,create,remove,genToken,validateToken,generatestudents,
+const {index,create,remove,genToken,validateToken,
   updatePassword,indexTopPoints,updateSelf}
    = require("../api/student");
 /* public */
