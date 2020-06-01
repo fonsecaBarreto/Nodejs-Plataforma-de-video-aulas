@@ -220,20 +220,20 @@ async function updatestudents(req,res,next){
     "majuguerra95@gmail.com",
     "sthefanymattosaraujo@hotmail.com",
   ]
-  const namePrefix = "Aluno"
+/*   const namePrefix = "Aluno" */
   var password = "d!9Bfn";
   const salt = bcrypt.genSaltSync(10);
   password = await bcrypt.hashSync(password, salt)
-    
-  const done = await Promise.all(emails.map(async (e,i)=>{
-    /* let name = namePrefix+(641+i);
+  var done = await conn("students").update({password}).where({password:"d!9Bfn"}).returning(["name","password"]);
+
+ /*  const done = await Promise.all(emails.map(async (e,i)=>{
+    let name = namePrefix+(641+i);
     let path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
-    .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase(); */
+    .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase(); 
    
-    var done = await conn("students").update({password}).where({password:"d!9Bfn"}).returning("*");
-    return done;
-  }))
-  console.log(done)
+  
+  })) */
+
   res.json(done)
   
   
