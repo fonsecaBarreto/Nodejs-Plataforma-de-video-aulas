@@ -19,7 +19,7 @@ async function index(req, res, next) {
     if(users.length){
       users =  await Promise.all(users.map(async student=>{
         student.exercises = (await conn("exercisesreplies").where({student:student.id}).count().first()).count;
-        student.onhold = (await conn("exercisesreplies").where({student:student.id,closed:true}).count().first()).count;
+        student.onhold = (await conn("exercisesreplies").where({student:student.id,closed:false}).count().first()).count;
         return student
       }))
     }
@@ -132,6 +132,7 @@ async function generateToken(user){
   const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
 }
+
 const jwt = require("jsonwebtoken");
 async function genToken(req, res, next) {
   try {
