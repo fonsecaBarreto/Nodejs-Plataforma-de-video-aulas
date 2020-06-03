@@ -16,7 +16,7 @@ async function indexById(req,res,next){
 
 async function indexByStudent(req,res,next){
   try{
-    var replies = await conn("exercisesreplies").where({student:req.params.student}).select("*");
+    var replies = await conn("exercisesreplies").where({student:req.params.student}).select("*").orderBy('closed', 'cresc');
     if(replies.length){
       replies = await Promise.all(replies.map(async(r,i)=>{
         r.exercise = await (conn("exercises").where({id:r.exercise})).first();

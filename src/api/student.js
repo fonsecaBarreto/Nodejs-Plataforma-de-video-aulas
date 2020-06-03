@@ -76,35 +76,63 @@ async function updatePassword(req,res,next){
   }catch(err){next(err)}
   
 }
+
 async function create(req, res, next) {
   try {
-    var {name,email,password,password_repeat,points,notes,picture} = {...req.body}
+    console.log("creatin student")
+    var {name,email,password,password_repeat,notes,picture,points=0} = {...req.body}
       const errors = [];
       const id= req.params.id || null;
-      if(isNull(name)     || !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
-      if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
-      if(isNull(password) || !isString(password)) errors.push(BuildError("Senha Inválida.","password"))
-      if( password        !== password_repeat)    errors.push(BuildError("Senhas não coincidem.","password_repeat"))
-      if(!isNull(points)  && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
-      if(!isNull(notes)   && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
-      if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
-    if (errors.length) throw [422, errors];
+      if(id == null){
+        if(isNull(name)     || !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
+        if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
+        if(isNull(password) || !isString(password)) errors.push(BuildError("Senha Inválida.","password"))
+        if( password !== password_repeat)           errors.push(BuildError("Senhas não coincidem.","password_repeat"))
+        if(!isNull(points)  && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
+        if(!isNull(notes)   && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
+        if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
+        if (errors.length) throw [422, errors];
+      }else{ // on update
+        if(!isNull(name)      &&  !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
+        if(!isNull(email)     &&  !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
+        if(!isNull(password)  &&  !isString(password)) errors.push(BuildError("Senha Inválida.","password"))
+        if(!isNull(password)  && password !== password_repeat)    errors.push(BuildError("Senhas não coincidem.","password_repeat"))
+        if(!isNull(points)    && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
+        if(!isNull(notes)     && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
+        if(!isNull(picture)   && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
+        if (errors.length) throw [422, errors];
+      }
 
-    const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
-    if((await studentSameEmail).length) throw [422, "Email já cadastrado."]
+      if(!isNull(email)){
+        const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
+        if((studentSameEmail).length) throw [422, "Email já cadastrado."];
+      }
+      var path = null;
+  
+      if(!isNull(password)){
+        const salt = bcrypt.genSaltSync(10);
+        password = await bcrypt.hashSync(password, salt)
+      }
+      if(!isNull(email)){
+        email = normalizeEmail(email);
+      }
 
-    const path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
-    .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-    const salt = bcrypt.genSaltSync(10);
-    password = await bcrypt.hashSync(password, salt)
-    email = normalizeEmail(email);
-    if(isNull(id)){
-      const result = await conn("students").insert({picture,name,email,password,points,notes,path}).returning(["path","id","name","email","points","picture"]);
-      res.json(result[0])
-    }else{
-      const result = await conn("students").update({picture,name,email,password,points,notes,path}).where({id}).returning(["path","id","name","email","points","picture"]);
-      res.json(result[0])
-    }
+      if(!isNull(name)){
+        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
+       .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+     }
+     
+      console.log("all fine")
+      if(isNull(id)){
+        console.log("id")
+        const result = await conn("students").insert({picture,name,email,password,points,notes,path}).returning(["path","id","name","email","points","picture"]);
+        res.json(result[0])
+      }else{
+        
+        console.log("updating")
+        const result = await conn("students").update({picture,name,email,password,points,notes,path}).where({id}).returning(["path","id","name","email","points","picture"]);
+        res.json(result[0])
+      }
   } catch (err) {
     next(err)
   }
@@ -132,7 +160,6 @@ async function generateToken(user){
   const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
 }
-
 const jwt = require("jsonwebtoken");
 async function genToken(req, res, next) {
   try {
