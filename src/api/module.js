@@ -28,7 +28,11 @@ async function indexModuleChilds(req,res,next){
 async function indexModuleExercises(req,res,next){
   try{
     const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
-    const exercises = await conn("exercises").where({module:id});
+    const exercises = await conn("exercises")
+    .where({module:id})
+    .orderBy("notation","cresc")
+
+
     if(exercises && exercises.length){
       await Promise.all(exercises.map(async e=>{
         try{
