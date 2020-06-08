@@ -8,7 +8,7 @@ async function find(){
 async function index(req,res,next){
   try{
    
-    var signature = await conn("email-signature").select(["email","id"]);
+    var signature = await conn("email-signature").select(["email","id","name","phone"]);
     res.json(signature)
   }catch(err){next(err)}
 }
