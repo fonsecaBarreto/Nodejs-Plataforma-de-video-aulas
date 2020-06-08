@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 9000;
 const app = express();
 app.use("/files",express.static(__dirname+"/temp/uploads"))
 app.get("/",(req,res)=>{
-  res.json({version:"v 1.3.0",status:"ok",msg:"Curiosity Killed The Cat"})
+  res.json({version:"v 1.3.9",status:"ok",msg:"Curiosity Killed The Cat"})
 })
 midlewares(app);
 routes(app);

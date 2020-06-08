@@ -2,7 +2,7 @@ const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError, isEmail} = require("../api/validation");
 var normalizeEmail = require('normalize-email')
 async function find(){
-  const emails = await conn("email-signature");
+  const emails = await conn("email-signature").select(["email","name","phone"]);
   return emails;
 }
 async function index(req,res,next){
@@ -22,14 +22,17 @@ async function indexById(req,res,next){
 async function create(req,res,next){
   try{
    
-    var {email} = {...req.body}
+    var {email,name,phone} = {...req.body}
     if(isNull(email) || !isEmail(email))  throw [422,"Existe algo de errado com o e-mail inserido, verifique!"];
+
+    if(!isNull(email) && !isString(name))  email == null
+    if(!isNull(phone) && !isString(phone)) phone == null
     email = normalizeEmail(email);
     
     const fromdb = await conn("email-signature").where({email}).first();
     if(fromdb) throw [422, "E-mail já cadastrado"]
     
-    const signature = await conn('email-signature').insert({email}).returning(["email","id"]);
+    const signature = await conn('email-signature').insert({email,name,phone}).returning(["*"]);
     return res.json(signature)
   }catch(err){next(err)}
 }
