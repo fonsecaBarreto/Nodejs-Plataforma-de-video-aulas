@@ -5,9 +5,7 @@ const querySelect = ["id","name","parentId","description","picture","notation","
 /*  */
 async function archive(req,res,next){
   try{
-    console.log("archiving")
     const {archived} = {...req.body}
-    console.log(archived)
     const id = req.params.id;
     const errors =[];
     if(archive == null || archive == undefined || (typeof archived != "boolean")) errors.push(new BuildError("Defina uma valor Válido Para 'Arquivado'","archived"))
@@ -34,7 +32,8 @@ async function index(req,res,next){
 async function indexModuleChilds(req,res,next){
   try{
     const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
-    var modules = await conn("modules").where({parentId:id})
+
+    var modules = await conn("modules").where({parentId:id,archived:false})
     .select(["id","name","path","description","picture","notation"])
     .orderBy('notation', 'cresc')
     res.json({name,description,children:[...modules]})
@@ -44,7 +43,7 @@ async function indexModuleExercises(req,res,next){
   try{
     const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
     const exercises = await conn("exercises")
-    .where({module:id})
+    .where({module:id,archived:false})
     .orderBy("notation","cresc")
 
 
@@ -61,7 +60,7 @@ async function indexModuleExercises(req,res,next){
 }
 async function indexPrime(req,res,next){
   try{
-    var modules = await conn("modules").where({parentId:null})
+    var modules = await conn("modules").where({parentId:null,archived:false})
     .select(["id","name","path","description","picture","notation"])
     .orderBy('notation', 'cresc')
     res.json(modules)
