@@ -1,11 +1,12 @@
 const Router = require("express").Router()
-const {index,create,remove,getJsonTree,indexById,indexPrime,indexModuleChilds,indexModuleExercises} = require("../api/module");
+const {index,create,remove,getJsonTree,indexById,indexPrime,indexModuleChilds,indexModuleExercises,archive} = require("../api/module");
 const {validateToken} = require( "../api/admin");
 const student = require("../api/student");
 
 Router.get("/prime",student.validateToken, indexPrime)
 Router.get("/indexModuleChilds/:module",student.validateToken, indexModuleChilds)
 Router.get("/exercises/:module",student.validateToken,indexModuleExercises)
+Router.put("/archive/:id",validateToken,archive)
 
 
 

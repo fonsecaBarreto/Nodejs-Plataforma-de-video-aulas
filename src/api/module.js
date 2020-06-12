@@ -1,12 +1,27 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
-
+const querySelect = ["id","name","parentId","description","picture","notation","archived"];
 
 /*  */
+async function archive(req,res,next){
+  try{
+    console.log("archiving")
+    const {archived} = {...req.body}
+    console.log(archived)
+    const id = req.params.id;
+    const errors =[];
+    if(archive == null || archive == undefined || (typeof archived != "boolean")) errors.push(new BuildError("Defina uma valor Válido Para 'Arquivado'","archived"))
+    if(errors.length) throw [422,errors]
+    var moduleExists = await conn("modules").where({id}).select('id');
+    if(!moduleExists && !moduleExists.length) throw (404,"Módulo invalido");
+    const module = await conn("modules").update({archived}).where({id}).returning(querySelect)
+    return res.json(module)
+  }catch(err){next(err)}
+}
 async function index(req,res,next){
   try{
     var modules = await conn("modules")
-    .select(["id","notation","name","parentId","path","description","picture"])
+    .select(querySelect)
     .orderBy('notation', 'cresc')
     if(modules.length){
       modules = await Promise.all(modules.map(async c=>{
@@ -125,7 +140,7 @@ const toTree = async(modules,tree)=>{
 async function getJsonTree(req,res,next){
   try{
     const modules = await conn("modules")
-    .select(["notation","id","name","parentId","description","picture"])
+    .select(["notation","id","name","parentId","description","picture","archived"])
     .orderBy('notation', 'cresc')
     var tree = await toTree(modules);
     res.json(tree); 
@@ -156,4 +171,4 @@ const getPath = async (id) =>{ //get the subodinates path
   path = await assemblePath(modules,id)
   return path
 } 
-module.exports = {index,create,remove,indexById,getJsonTree,getName,indexPrime,indexModuleChilds,indexModuleExercises}
+module.exports = {index,create,remove,indexById,getJsonTree,getName,indexPrime,indexModuleChilds,indexModuleExercises,archive}
