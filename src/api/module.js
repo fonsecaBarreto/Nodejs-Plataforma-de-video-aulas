@@ -1,6 +1,6 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
-const querySelect = ["id","name","parentId","description","picture","notation","archived"];
+const querySelect = ["id","name","parentId","description","picture","notation","archived","restrict","path"];
 
 /*  */
 async function archive(req,res,next){
@@ -60,9 +60,28 @@ async function indexModuleExercises(req,res,next){
 }
 async function indexPrime(req,res,next){
   try{
-    var modules = await conn("modules").where({parentId:null,archived:false})
-    .select(["id","name","path","description","picture","notation"])
+    const user = req.user;
+    if(!user)throw 403;
+    var modules = await conn("modules")
+    .where({parentId:null,archived:false})
+    .select(querySelect)
     .orderBy('notation', 'cresc')
+
+    modules = modules.filter(m=>{
+
+      if(m.restrict == null) return m
+      if(m.restrict != null && m.restrict.id == null) return m
+      else if(m.restrict != null && m.restrict.id != null && m.restrict.id == user.id)
+       return m;
+  
+      
+        
+        
+  
+      
+    })
+    
+    console.log(modules)
     res.json(modules)
   }catch(err){next(err)}
 }
@@ -78,7 +97,7 @@ async function indexById(req,res,next){
 /*  */
 async function create(req,res,next){
   try{
-    const {name,parentId,description,picture,notation} = {...req.body}
+    const {name,parentId,description,picture,notation,restrict} = {...req.body}
     const id = req.params.id
     const errors = [];
     if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
@@ -87,6 +106,7 @@ async function create(req,res,next){
     if(isNull(name) || !isString(name)) errors.push(BuildError("Nome iválido","name"));
     if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
     if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
+    if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
     if(errors.length) throw [422,errors]
 
     if(parentId != undefined && parentId != null) { // if aprent Exists
@@ -107,10 +127,10 @@ async function create(req,res,next){
       const sameName = await conn("modules").where({name}); // if post check is anme already exists
       if(sameName.length) throw [422, "Modulo ja Registrada"];
 
-      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation}).returning(["id","notation",'name',"parentId","description","picture"]);
+      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict}).returning(["id","notation",'name',"parentId","description","picture","restrict"]);
       return res.json(modules)
     }else{
-      const modules = await conn("modules").update({name,parentId,path,description,picture,notation}).where({id}).returning(["id","notation","name","parentId","description","picture"]);
+      const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict}).where({id}).returning(["id","notation","name","parentId","description","picture","restrict"]);
       return res.json(modules)
     }
     
