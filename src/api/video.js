@@ -19,9 +19,10 @@ async function video( req, res, next){
   upload.single("video")(req,res,async (err)=>{
     try{
         if(err || req.file==undefined) throw [422, err];
-        await uploadToAws(req.file.buffer,'videotest')
-          .then(resp=>{res.json(resp) })
-          .catch(err=>{next([500,err])}) 
+        console.log(req.file)
+        await uploadToAws(req.file.buffer,req.file.originalname)
+        .then(resp=>{res.json(resp) })
+        .catch(err=>{next([500,err])})  
 
     }catch(err){next(err)}
   })
