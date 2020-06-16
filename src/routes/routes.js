@@ -8,10 +8,12 @@ const Admin = require("./adminRoutes"),
       modules_router = require("./moduleRoutes"),
       exercises_router = require("./exercisesRoutes"),
       reply_router = require("./replyRoutes"),
-      {image} = require("../api/Image");
+      {image} = require("../api/Image"),
+      {video} = require("../api/video");
 const adminAPi = require("../api/admin");
 const studentAPi = require("../api/student");
 module.exports = app =>{
+  app.post("/video",adminAPi.validateToken, video)
   app.post("/image",adminAPi.validateToken, image)
   app.post("/profilepic",studentAPi.validateToken,image)
 

@@ -169,6 +169,7 @@ async function genToken(req, res, next) {
     if (isNull(email)) errors.push(BuildError("Usuário inválido","email"))
     if (isNull(password)) errors.push(BuildError("Senha inválida","password"));
     if(errors.length) throw [422, errors];
+    
     const user = await conn("students").where({email}).select(["id","name","points","picture","email","password"]).first();
     if (!user) throw [422, "Usuário desconhecido"];
 
@@ -183,7 +184,7 @@ async function genToken(req, res, next) {
 async function validateToken(req, res, next) {
   try {
     const authorizationHeader = req.headers.authorization
-    if (!authorizationHeader || authorizationHeader === undefined) throw [401, "Acesso Negado"];
+    if (!authorizationHeader || authorizationHeader === undefined) throw [401, "Acesso Negado!"];
     const parts = authorizationHeader.split(" ");
     if (parts.length === 2 && parts[0] === "bearer") {
       jwt.verify(parts[1], process.env.USER_TOKEN_SECRET, (err, decoded) => {

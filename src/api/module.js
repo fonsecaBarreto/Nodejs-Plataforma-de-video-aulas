@@ -1,6 +1,7 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
-const querySelect = ["id","name","parentId","description","picture","notation","archived","restrict","path"];
+const querySelect = ["id","name","parentId","description","picture","notation",
+"archived","restrict","path","video","access","views","votes"];
 
 /*  */
 async function archive(req,res,next){
@@ -41,7 +42,7 @@ async function indexModuleChilds(req,res,next){
 }
 async function indexModuleExercises(req,res,next){
   try{
-    const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
+    const {id,name,description,video,picture} = await conn("modules").where({path:req.params.module}).select(["id","picture","name","description","video"]).first();
     const exercises = await conn("exercises")
     .where({module:id,archived:false})
     .orderBy("notation","cresc")
@@ -55,7 +56,7 @@ async function indexModuleExercises(req,res,next){
         }catch(err){}
       }))
     }
-    res.json({name,description,children:[...exercises]})
+    res.json({name,description,video,picture,children:[...exercises]})
   }catch(err){next(err)}
 }
 async function indexPrime(req,res,next){
@@ -81,7 +82,7 @@ async function indexPrime(req,res,next){
       
     })
     
-    console.log(modules)
+
     res.json(modules)
   }catch(err){next(err)}
 }
@@ -97,7 +98,7 @@ async function indexById(req,res,next){
 /*  */
 async function create(req,res,next){
   try{
-    const {name,parentId,description,picture,notation,restrict} = {...req.body}
+    const {name,parentId,description,picture,notation,restrict,video} = {...req.body}
     const id = req.params.id
     const errors = [];
     if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
@@ -107,6 +108,7 @@ async function create(req,res,next){
     if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
     if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
     if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
+    if(!isNull(video) && !isString(video)) errors.push(BuildError("Formato de video Incorreto", "video"));
     if(errors.length) throw [422,errors]
 
     if(parentId != undefined && parentId != null) { // if aprent Exists
@@ -127,10 +129,10 @@ async function create(req,res,next){
       const sameName = await conn("modules").where({name}); // if post check is anme already exists
       if(sameName.length) throw [422, "Modulo ja Registrada"];
 
-      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict}).returning(["id","notation",'name',"parentId","description","picture","restrict"]);
+      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video}).returning(["id","notation",'name',"parentId","description","picture","restrict","video"]);
       return res.json(modules)
     }else{
-      const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict}).where({id}).returning(["id","notation","name","parentId","description","picture","restrict"]);
+      const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video}).where({id}).returning(["id","notation","name","parentId","description","picture","restrict","video"]);
       return res.json(modules)
     }
     
@@ -159,7 +161,7 @@ const toTree = async(modules,tree)=>{
 async function getJsonTree(req,res,next){
   try{
     const modules = await conn("modules")
-    .select(["notation","id","name","parentId","description","picture","archived"])
+    .select(querySelect)
     .orderBy('notation', 'cresc')
     var tree = await toTree(modules);
     res.json(tree); 
