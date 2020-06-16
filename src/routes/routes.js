@@ -9,7 +9,8 @@ const Admin = require("./adminRoutes"),
       exercises_router = require("./exercisesRoutes"),
       reply_router = require("./replyRoutes"),
       {image} = require("../api/Image"),
-      {video} = require("../api/video");
+      {video} = require("../api/video"),
+      ingresso_router = require("./ingressoRoutes")
 const adminAPi = require("../api/admin");
 const studentAPi = require("../api/student");
 module.exports = app =>{
@@ -17,6 +18,7 @@ module.exports = app =>{
   app.post("/image",adminAPi.validateToken, image)
   app.post("/profilepic",studentAPi.validateToken,image)
 
+  app.use("/ingresso",ingresso_router)
   app.use("/admins",Admin)
   app.use("/categories",Category)
   app.use("/posts",Post)
