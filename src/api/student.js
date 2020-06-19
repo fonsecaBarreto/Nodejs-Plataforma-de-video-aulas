@@ -139,12 +139,9 @@ async function subscription(req,res,next){
     const validcpf = cpfCnpj != null && isNaN(cpfCnpj) ? cpf.isValid(cpfCnpj) : false;
     if(isNull(cpfCnpj) || !isNaN(cpfCnpj) || !validcpf ) errors.push(BuildError("CPF Inválido","cpfCnpj"))
 
-
-    
     if(isNull(name)     || !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
     if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
     if(isNull(password) || !isString(password)) errors.push(BuildError("Senha Inválida.","password"));
-   
    
     if( password !== password_repeat)           errors.push(BuildError("Senhas não coincidem.","password_repeat"))
     if(!isNull(phone) && (!isString(phone) || phone.length < 8)) errors.push(BuildError("Numero de Celular Inválido","phone"))
@@ -194,20 +191,29 @@ function rescueAsassCostumer(id){
   })
 }
 async function payment(req,res,next){
-  
-  const payload = {...req.body};
-  if(payload != null){
-    if(payload.event == 'PAYMENT_CREATED'){
-      try{
-        const {customer} = {...payload.payment};
-        const {name,email} = await rescueAsassCostumer(customer)
-        console.log(name,email)
-        console.log("qui eu salvo no banco de dados")
-      }catch(err){next(err)}
+  try{
+    const payload = {...req.body};
+    if(payload != null){
+      if(payload.event == 'PAYMENT_CREATED'){ //insert
+        try{
+          const {customer,subscription} = {...payload.payment};
+          const exists = await conn("students").where({email});
+          if(exists.length) res.sendStatus(200)
+          const {name,email} = await rescueAsassCostumer(customer)
+          var password = "padrao"
+          const salt = bcrypt.genSaltSync(10);
+          password = await bcrypt.hashSync(password, salt)
+          path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
+           .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,passowrd}).returning(["id","email","name"])
+          console.log(usuario)
+        }catch(err){next(err)}
+
+      }
     }
-  }
-  res.sendStatus(200)
-   
+    res.sendStatus(200)
+  }catch(err){next(err)}
+    
     
 
 }
