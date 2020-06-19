@@ -207,7 +207,9 @@ async function payment(req,res,next){
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,password}).returning(["id","email","name"])
+          const expiration = Date.now() + (6000**8) 
+          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,
+            password,authorized:true,expiration,points:0}).returning("*")
           console.log(usuario) 
 
         }catch(err){throw err}
