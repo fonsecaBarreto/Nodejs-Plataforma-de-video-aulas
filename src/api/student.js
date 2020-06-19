@@ -194,6 +194,7 @@ async function payment(req,res,next){
   
     console.log("evento acontecandoe ai mermoamdoasmd")
     const payload = {...req.body};
+    console.log(payload)
     if(payload != null){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
