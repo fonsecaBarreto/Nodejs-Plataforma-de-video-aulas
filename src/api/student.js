@@ -180,6 +180,37 @@ async function subscription(req,res,next){
   }catch(err){next(err)}
 
 }
+function rescueAsassCostumer(id){
+  return new Promise((resolve,reject)=>{
+    request({
+      method: 'GET',
+      url: `https://sandbox.asaas.com/api/v3/customers/${id}`,
+      headers: {'Content-Type': 'application/json', 'access_token': api_key}},
+      function (error, response, body) {
+        if(error) reject(error)
+        if(response.statusCode > 300) reject()
+        resolve(JSON.parse(body))
+      });
+  })
+}
+async function payment(req,res,next){
+  
+  const payload = {...req.body};
+  if(payload != null){
+    if(payload.event == 'PAYMENT_CREATED'){
+      try{
+        const {customer} = {...payload.payment};
+        const {name,email} = await rescueAsassCostumer(customer)
+        console.log(name,email)
+        console.log("qui eu salvo no banco de dados")
+      }catch(err){next(err)}
+    }
+  }
+  res.sendStatus(200)
+   
+    
+
+}
 async function create(req, res, next) {
   try {
     console.log("creatin student")
@@ -382,5 +413,6 @@ module.exports = {
   concatPoints,
   updatePassword,
   updateSelf,
-  subscription
+  subscription,
+  payment
 }
