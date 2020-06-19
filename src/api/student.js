@@ -199,9 +199,9 @@ async function payment(req,res,next){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
           const {customer,subscription} = {...payload.payment};
-          const exists = await conn("students").where({email});
-          if(exists.length) throw [400, "Email já cadastrado"]
           const {name,email} = await rescueAsassCostumer(customer)
+          const exists = await conn("students").where({email});
+          if(exists.length) console.log("email ja existe pow")
           console.log(name,email)
          /*  var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
