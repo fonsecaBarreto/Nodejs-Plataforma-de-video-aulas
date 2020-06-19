@@ -209,9 +209,12 @@ async function payment(req,res,next){
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
           const expiration = Date.now() + (6000**8) 
           expiration = expiration.toISOString()
-          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,
-            password,authorized:true,expiration,points:0}).returning("*")
-          console.log(usuario) 
+
+          try{
+            const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,
+              password,authorized:true,points:0}).returning("*")
+              console.log(usuario) 
+          }catch(err){ throw err}
 
         }catch(err){throw err}
 
