@@ -1,7 +1,11 @@
 const {isNull, BuildError, isString , isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
 const conn = require("../config/sqlConnection");
-var normalizeEmail = require('normalize-email')
+var normalizeEmail = require('normalize-email');
+const api_key ="5890ddece9c30463c2babfc8bb5b5e5ce36311f8abeafb76e04b7fa0b07517a2"
+var request = require('request');
+const { cpf } = require('cpf-cnpj-validator');
+
 async function concatPoints(student,exercise,achievement){
   try{
     if(achievement == null)
@@ -76,7 +80,106 @@ async function updatePassword(req,res,next){
   }catch(err){next(err)}
   
 }
+ function createAsaasCostumer(name,email,phone,cpfCnpj){
+  return new Promise((resolve,reject)=>{
 
+    request({ method: 'POST',url: 'https://sandbox.asaas.com/api/v3/customers',
+    headers: { 'Content-Type': 'application/json','access_token': api_key},body: JSON.stringify({name,email,phone,cpfCnpj})
+    },async function (error, response, body) {
+        if(error) reject(error)
+        if(response.statusCode < 300){
+            body = JSON.parse(body);
+            resolve(body)
+       
+        }
+    }); 
+  })
+}
+function createAssinatura(customer_id){
+  return new Promise((resolve,reject)=>{
+    var data = new Date();
+    data.setDate(data.getDate() +7 );
+    const ass_order ={
+      customer:customer_id,
+      billingType:"UNDEFINED",
+      nextDueDate: data.toJSON(),
+      value: 47.9, 
+      cycle: "MONTHLY", 
+      description: "Assinatura Clube de Inglês com Mathews", 
+      discount: { value: 42, dueDateLimitDays: 0 },
+      fine: { value: 89.9 },  interest: { value: 1.67 }
+    }
+    request({method: 'POST',url: 'https://sandbox.asaas.com/api/v3/subscriptions',
+        headers: {'Content-Type': 'application/json','access_token': api_key},
+        body: JSON.stringify(ass_order)
+      }, function (error, response, body) {
+        if(error) reject(error)
+        if(response.statusCode < 300){
+          body = JSON.parse(body);
+          resolve(body)
+
+        }
+      
+   
+      
+    });
+
+  })
+
+
+}
+async function subscription(req,res,next){
+  console.log("comecou")
+  try{
+    var {name,email,password,password_repeat,phone,cpfCnpj} = {...req.body}
+    /*  console.log(cpf.isValid(cpfCnpj)) */
+
+    cpfCnpj = cpf.format(cpfCnpj);
+    const errors = [];
+    const validcpf = cpfCnpj != null && isNaN(cpfCnpj) ? cpf.isValid(cpfCnpj) : false;
+    if(isNull(cpfCnpj) || !isNaN(cpfCnpj) || !validcpf ) errors.push(BuildError("CPF Inválido","cpfCnpj"))
+
+
+    
+    if(isNull(name)     || !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
+    if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
+    if(isNull(password) || !isString(password)) errors.push(BuildError("Senha Inválida.","password"));
+   
+   
+    if( password !== password_repeat)           errors.push(BuildError("Senhas não coincidem.","password_repeat"))
+    if(!isNull(phone) && (!isString(phone) || phone.length < 8)) errors.push(BuildError("Numero de Celular Inválido","phone"))
+    if (errors.length) throw [422, errors];
+    
+    
+    if(!isNull(email)){
+      email = normalizeEmail(email);
+      const studentSameEmail = await conn("students").where({email}).select("email");
+      if((studentSameEmail).length) throw [422,[{msg:"Email já cadastrado.",param:"email"}]];
+    }
+    if(!isNull(password)){
+      const salt = bcrypt.genSaltSync(10);
+      password = await bcrypt.hashSync(password, salt)
+    }
+    var path = null;
+    if(!isNull(name))path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+    
+    try{
+      customer = await createAsaasCostumer(name,email,phone,cpfCnpj)
+      .then(async customer=>{return  conn("students").insert({name,email,password,customer_id:customer.id,points:0,path,cpfCnpj}).returning(["cpfCnpj","path","id","name","email","points","picture","customer_id"])})
+      .then(result=> createAssinatura(result[0].customer_id) )
+      .then(assinatura=>{ 
+        return conn("students").where({customer_id:assinatura.customer}).update({subscription_id:assinatura.id}).returning(["subscription_id","cpfCnpj","path","id","name","email","points","picture","customer_id"]);})
+      .then(result=>{ res.json(result)})
+      .catch(err=>{ res.send(err)})
+      
+      
+
+
+    }catch(err){throw [500,err]}
+   
+  }catch(err){next(err)}
+
+}
 async function create(req, res, next) {
   try {
     console.log("creatin student")
@@ -92,6 +195,7 @@ async function create(req, res, next) {
         if(!isNull(notes)   && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
         if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
         if (errors.length) throw [422, errors];
+
       }else{ // on update
         if(!isNull(name)      &&  !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
         if(!isNull(email)     &&  !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
@@ -277,5 +381,6 @@ module.exports = {
   validateToken,
   concatPoints,
   updatePassword,
-  updateSelf
+  updateSelf,
+  subscription
 }

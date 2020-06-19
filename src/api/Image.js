@@ -27,7 +27,8 @@ function localStorage(buffer,name){
         });  
     })    
 }
-const s3 = require("../config/aws.js")
+const AWS = require("../config/aws.js")
+const s3 = new AWS.S3()
 const uploadToAws = (buffer,name)=>{
 
     return new Promise(async (resolve,reject)=>{
