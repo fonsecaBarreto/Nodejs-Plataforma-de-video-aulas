@@ -191,7 +191,7 @@ function rescueAsassCostumer(id){
   })
 }
 async function payment(req,res,next){
-  try{
+  
     console.log("evento acontecandoe ai mermoamdoasmd")
     const payload = {...req.body};
     if(payload != null){
@@ -199,7 +199,7 @@ async function payment(req,res,next){
         try{
           const {customer,subscription} = {...payload.payment};
           const exists = await conn("students").where({email});
-          if(exists.length) return res.sendStatus(200)
+          if(exists.length) throw [400, "Email já cadastrado"]
           const {name,email} = await rescueAsassCostumer(customer)
           console.log(name,email)
          /*  var password = "padrao"
@@ -209,15 +209,12 @@ async function payment(req,res,next){
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
           const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,passowrd}).returning(["id","email","name"])
           console.log(usuario) */
-        }catch(err){next(err)}
+        }catch(err){throw err}
 
       }
     }
     console.log("all this word seems write")
-    res.sendStatus(200)
-  }catch(err){next(err)}
-    
-    
+    return res.sendStatus(200)
 
 }
 async function create(req, res, next) {
