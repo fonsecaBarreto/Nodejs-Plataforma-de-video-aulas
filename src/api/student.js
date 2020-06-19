@@ -195,15 +195,14 @@ async function payment(req,res,next){
   
     console.log("evento >")
     const payload = {...req.body};
-    console.log(payload)
     if(payload != null){
+      console.log(payload.event)
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
           const {customer,subscription} = {...payload.payment};
           const {name,email} = await rescueAsassCostumer(customer)
           const exists = await conn("students").where({email});
           if(exists.length) {console.log("email ja existe");return res.sendStatus(200)}
-          console.log(name,email)
          var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
           password = await bcrypt.hashSync(password, salt)
@@ -213,14 +212,13 @@ async function payment(req,res,next){
           try{
             const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,
               password,authorized:false,points:0}).returning("*")
-              console.log(usuario) 
+              console.log("student create", usuario) 
           }catch(err){ throw err}
-
         }catch(err){throw err}
-
       }else if(payload.event ='PAYMENT_RECEIVED'){
+
         const {customer,status} = {...payload.payment};
-        if(status != "CONFIRMED")return res.sendStatus(200)
+        if(status != "RECEIVED")return res.sendStatus(200)
         const {name,email} = await rescueAsassCostumer(customer)
         const exists = await conn("students").where({email});
         if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
