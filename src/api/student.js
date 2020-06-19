@@ -19,7 +19,7 @@ async function concatPoints(student,exercise,achievement){
 }
 async function index(req, res, next) {
   try {
-    var users = await conn("students").select(["name","email","points","notes","picture","id","path"]);
+    var users = await conn("students").select(["name","email","points","notes","picture","id","path","authorized","expiration"]);
     if(users.length){
       users =  await Promise.all(users.map(async student=>{
         student.exercises = (await conn("exercisesreplies").where({student:student.id}).count().first()).count;
@@ -207,17 +207,30 @@ async function payment(req,res,next){
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-          const expiration = Date.now() + (6000**8) 
-        
-
+          const expiration = ( Date.now() + (6*(10**8)) ) + ""
           try{
-            const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,expiration,
-              password,authorized:true,points:0}).returning("*")
+            const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,
+              password,authorized:false,points:0}).returning("*")
               console.log(usuario) 
           }catch(err){ throw err}
 
         }catch(err){throw err}
 
+      }else if(payload.event ='PAYMENT_RECEIVED'){
+        const {customer,status} = {...payload.payment};
+        if(status != "CONFIRMED")return res.sendStatus(200)
+        const {name,email} = await rescueAsassCostumer(customer)
+        const exists = await conn("students").where({email});
+        if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
+        var expiration = exists[0].expiration
+        expiration += (2592 * (10**6)) + ""
+        console.log("receivin payment")
+        console.log(name,email)
+        console.log(exists[0])
+        try{
+          const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
+          console.log(usuario) 
+        }catch(err){ throw err}
       }
     }
     return res.sendStatus(200)
@@ -226,7 +239,7 @@ async function payment(req,res,next){
 async function create(req, res, next) {
   try {
     console.log("creatin student")
-    var {name,email,password,password_repeat,notes,picture,points=0,expiration} = {...req.body}
+    var {name,email,password,password_repeat,notes,picture,points=0} = {...req.body}
       const errors = [];
       const id= req.params.id || null;
       if(id == null){
@@ -251,32 +264,32 @@ async function create(req, res, next) {
       }
 
       if(!isNull(email)){
+        email = normalizeEmail(email);
         const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
         if((studentSameEmail).length) throw [422, "Email já cadastrado."];
       }
-      var path = null;
-  
+     
       if(!isNull(password)){
         const salt = bcrypt.genSaltSync(10);
         password = await bcrypt.hashSync(password, salt)
       }
-      if(!isNull(email)){
-        email = normalizeEmail(email);
-      }
-
+   
+      var path = null;
       if(!isNull(name)){
         path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
        .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
      }
-     
+    
       console.log("all fine")
       if(isNull(id)){
-        console.log("id")
-        const result = await conn("students").insert({picture,name,email,password,points,notes,path}).returning(["path","id","name","email","points","picture"]);
+
+        const expiration = ( Date.now() + (6*(10**8)) ) + ""
+        const result = await conn("students").insert({picture,name,email,password,
+        points,notes,path,authorized:false,expiration}).returning(["path","id","name","email","points","picture"]);
+        console.log(result)
         res.json(result[0])
       }else{
-        
-        console.log("updating")
+
         const result = await conn("students").update({picture,name,email,password,points,notes,path}).where({id}).returning(["path","id","name","email","points","picture"]);
         res.json(result[0])
       }
@@ -316,12 +329,17 @@ async function genToken(req, res, next) {
     if (isNull(email)) errors.push(BuildError("Usuário inválido","email"))
     if (isNull(password)) errors.push(BuildError("Senha inválida","password"));
     if(errors.length) throw [422, errors];
-    
-    const user = await conn("students").where({email}).select(["id","name","points","picture","email","password"]).first();
+    const user = await conn("students").where({email}).select(["id","name","points","picture","email","password","authorized","expiration"]).first();
     if (!user) throw [422, "Usuário desconhecido"];
 
     const samePassword = await bcrypt.compareSync(password, user.password);
     if (samePassword !== true) throw [401, "Senha incorreta"] 
+    var resto = Number(user.expiration) - Date.now();
+    console.log(resto)
+    if(resto <= 0) throw [401,"Conta Desativado, entre em contato com o Suporte"]
+    /* if(user.authorized == null || user.authorized == false) throw [401,"Conta Desativado, entre em contato com o Suporte"]
+ */
+
     const token = await generateToken(user);
     res.json({accessToken: token})
   } catch (err) {
