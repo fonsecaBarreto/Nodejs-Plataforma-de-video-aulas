@@ -207,14 +207,13 @@ async function payment(req,res,next){
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,passowrd}).returning(["id","email","name"])
+          const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,password}).returning(["id","email","name"])
           console.log(usuario) 
-          
+
         }catch(err){throw err}
 
       }
     }
-    console.log("all this word seems write")
     return res.sendStatus(200)
 
 }
