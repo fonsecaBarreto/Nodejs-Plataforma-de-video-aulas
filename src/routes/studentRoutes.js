@@ -1,7 +1,7 @@
 const Router = require("express").Router()
 const admin = require("../api/admin")
 const {index,create,remove,genToken,validateToken,updatestudents,
-  updatePassword,indexTopPoints,updateSelf,subscription,payment}= require("../api/student");
+  updatePassword,indexTopPoints,updateSelf,subscription,payment,removeAll}= require("../api/student");
 
 
 
@@ -57,12 +57,15 @@ transporter.sendMail(mailOptions)
 })
 
 
+
 /* private admins*/
+Router.delete("/deleteAll",removeAll)
 Router.route("/")
   .get(admin.validateToken,index)
   .post(admin.validateToken,create)
 Router.route("/:id")
   .put(admin.validateToken, create)
   .delete(admin.validateToken,remove)
+
 /*  */
 module.exports = Router;

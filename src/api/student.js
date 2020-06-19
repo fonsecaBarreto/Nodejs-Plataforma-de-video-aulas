@@ -190,10 +190,12 @@ function rescueAsassCostumer(id){
       });
   })
 }
+
 async function payment(req,res,next){
   
     console.log("evento >")
     const payload = {...req.body};
+    console.log(payload)
     if(payload != null){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
@@ -306,6 +308,15 @@ async function remove(req, res, next) {
     next(err)
   }
 }
+async function removeAll(req, res, next) {
+  try {
+    const rows = await conn("students").del().whereNot({id:-1})
+    if (rows > 0) return res.sendStatus(204)
+    throw 406
+  } catch (err) {
+    next(err)
+  }
+}
 /* session */
 async function generateToken(user){
 
@@ -321,6 +332,7 @@ async function generateToken(user){
   return token 
 }
 const jwt = require("jsonwebtoken");
+const { removeAllListeners } = require("../config/sqlConnection");
 async function genToken(req, res, next) {
   try {
 
@@ -444,5 +456,6 @@ module.exports = {
   updatePassword,
   updateSelf,
   subscription,
-  payment
+  payment,
+  removeAll
 }
