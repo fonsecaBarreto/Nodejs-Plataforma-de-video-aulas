@@ -223,10 +223,9 @@ async function payment(req,res,next){
         const exists = await conn("students").where({email});
         if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
         var expiration = exists[0].expiration
-        expiration += 30*24*60*60*1000 + ""
-        console.log("receivin payment")
+        expiration = (expiration + (30*24*60*60*1000))+ ""
         console.log(name,email)
-        console.log(exists[0])
+        console.log("students updated:" ,exists[0])
         try{
           const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
           console.log(usuario) 
