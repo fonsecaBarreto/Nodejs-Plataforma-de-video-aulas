@@ -192,24 +192,24 @@ function rescueAsassCostumer(id){
 }
 async function payment(req,res,next){
   
-    console.log("evento acontecandoe ai mermoamdoasmd")
+    console.log("evento >")
     const payload = {...req.body};
-    console.log(payload)
     if(payload != null){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
           const {customer,subscription} = {...payload.payment};
           const {name,email} = await rescueAsassCostumer(customer)
           const exists = await conn("students").where({email});
-          if(exists.length) console.log("email ja existe pow")
+          if(exists.length) {console.log("email ja existe");return res.sendStatus(200)}
           console.log(name,email)
-         /*  var password = "padrao"
+         var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
           const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,passowrd}).returning(["id","email","name"])
-          console.log(usuario) */
+          console.log(usuario) 
+          
         }catch(err){throw err}
 
       }
