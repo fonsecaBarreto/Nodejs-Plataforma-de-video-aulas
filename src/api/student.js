@@ -192,6 +192,7 @@ function rescueAsassCostumer(id){
 }
 async function payment(req,res,next){
   try{
+    console.log("evento acontecandoe ai mermoamdoasmd")
     const payload = {...req.body};
     if(payload != null){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
@@ -200,6 +201,7 @@ async function payment(req,res,next){
           const exists = await conn("students").where({email});
           if(exists.length) return res.sendStatus(200)
           const {name,email} = await rescueAsassCostumer(customer)
+          console.log(name,email)
           var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
           password = await bcrypt.hashSync(password, salt)
