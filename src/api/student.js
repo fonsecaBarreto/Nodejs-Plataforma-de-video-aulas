@@ -202,13 +202,13 @@ async function payment(req,res,next){
           if(exists.length) return res.sendStatus(200)
           const {name,email} = await rescueAsassCostumer(customer)
           console.log(name,email)
-          var password = "padrao"
+         /*  var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
           const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,passowrd}).returning(["id","email","name"])
-          console.log(usuario)
+          console.log(usuario) */
         }catch(err){next(err)}
 
       }
