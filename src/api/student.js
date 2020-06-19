@@ -198,7 +198,7 @@ async function payment(req,res,next){
         try{
           const {customer,subscription} = {...payload.payment};
           const exists = await conn("students").where({email});
-          if(exists.length) res.sendStatus(200)
+          if(exists.length) return res.sendStatus(200)
           const {name,email} = await rescueAsassCostumer(customer)
           var password = "padrao"
           const salt = bcrypt.genSaltSync(10);
@@ -211,6 +211,7 @@ async function payment(req,res,next){
 
       }
     }
+    console.log("all this word seems write")
     res.sendStatus(200)
   }catch(err){next(err)}
     
