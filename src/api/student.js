@@ -200,7 +200,7 @@ async function payment(req,res,next){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
           const {customer,subscription} = {...payload.payment};
-          const {name,email} = await rescueAsassCostumer(customer)
+          const {name,email,cpfCnpj,phone} = await rescueAsassCostumer(customer)
           const exists = await conn("students").where({email});
           if(exists.length) {console.log("email ja existe");return res.sendStatus(200)}
          var password = "padrao"
@@ -210,9 +210,9 @@ async function payment(req,res,next){
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
           const expiration = ( Date.now() + (6*(10**8)) ) + ""
           try{
-            const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,
+            const usuario = await conn("students").insert({cpfCnpj,phone,path,name,email,customer_id:customer,subscription_id:subscription,expiration,
               password,authorized:false,points:0}).returning("*")
-              console.log("student create", usuario) 
+              console.log("created student:", usuario) 
           }catch(err){ throw err}
         }catch(err){throw err}
       }else if(payload.event ='PAYMENT_RECEIVED'){
@@ -223,7 +223,7 @@ async function payment(req,res,next){
         const exists = await conn("students").where({email});
         if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
         var expiration = exists[0].expiration
-        expiration += (2592 * (10**6)) + ""
+        expiration += 30*24*60*60*1000 + ""
         console.log("receivin payment")
         console.log(name,email)
         console.log(exists[0])
@@ -238,7 +238,7 @@ async function payment(req,res,next){
 }
 async function create(req, res, next) {
   try {
-    console.log("creatin student")
+    
     var {name,email,password,password_repeat,notes,picture,points=0} = {...req.body}
       const errors = [];
       const id= req.params.id || null;
