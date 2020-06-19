@@ -4,7 +4,7 @@ exports.up = function(knex) {
     t.string("subscription_id")
     t.string("customer_id")
     t.boolean("authorized")
-    t.timestamp("expiration")
+    t.string("expiration")
     t.string("phone")
     t.string("cpfCnpj")
   })

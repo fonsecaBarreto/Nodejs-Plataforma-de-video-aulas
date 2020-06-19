@@ -207,11 +207,11 @@ async function payment(req,res,next){
           password = await bcrypt.hashSync(password, salt)
           path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
            .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
- /*          const expiration = Date.now() + (6000**8) 
-          expiration = expiration.toISOString() */
+          const expiration = Date.now() + (6000**8) 
+        
 
           try{
-            const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,
+            const usuario = await conn("students").insert({name,email,customer_id:customer,subscription_id:subscription,expiration,
               password,authorized:true,points:0}).returning("*")
               console.log(usuario) 
           }catch(err){ throw err}
@@ -226,7 +226,7 @@ async function payment(req,res,next){
 async function create(req, res, next) {
   try {
     console.log("creatin student")
-    var {name,email,password,password_repeat,notes,picture,points=0} = {...req.body}
+    var {name,email,password,password_repeat,notes,picture,points=0,expiration} = {...req.body}
       const errors = [];
       const id= req.params.id || null;
       if(id == null){
