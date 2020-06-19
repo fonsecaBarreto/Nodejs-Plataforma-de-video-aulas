@@ -9,7 +9,7 @@ const {index,create,remove,genToken,validateToken,updatestudents,
   var request = require('request');
 
 Router.post("/pagamento",(req,res,next)=>{
-
+    console.log("pagamentoad treswre")
     res.json({...req.body})
     
 })
