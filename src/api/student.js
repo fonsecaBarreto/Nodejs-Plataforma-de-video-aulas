@@ -226,7 +226,7 @@ async function payment(req,res,next){
         expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
         console.log("students updated:" ,exists[0])
         try{
-          const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning(["expiration"])
+          const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
           console.log(usuario) 
         }catch(err){ throw err}
       }
