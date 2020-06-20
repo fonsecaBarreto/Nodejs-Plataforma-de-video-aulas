@@ -211,7 +211,7 @@ async function payment(req,res,next){
           const expiration = ( Date.now() + (6*(10**8)) ) + ""
           try{
             const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,
-              password,authorized:false,points:0}).returning("*")
+              password,authorized:false,points:0}).returning(["name"])
               console.log("created student:", usuario) 
           }catch(err){ throw err}
         }catch(err){throw err}
@@ -223,11 +223,10 @@ async function payment(req,res,next){
         const exists = await conn("students").where({email});
         if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
         var expiration = exists[0].expiration
-        expiration = (expiration + (30*24*60*60*1000))+ ""
-        console.log(name,email)
+        expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
         console.log("students updated:" ,exists[0])
         try{
-          const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
+          const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning(["expiration"])
           console.log(usuario) 
         }catch(err){ throw err}
       }
