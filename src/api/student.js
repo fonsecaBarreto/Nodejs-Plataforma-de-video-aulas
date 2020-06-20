@@ -37,16 +37,7 @@ async function index(req, res, next) {
   }catch(err){next(err)}
     
 }
-function rescueAsaasCostumer(customer_id){
-  return new Promise((resolve,reject)=>{
-    request({ method: 'GET',url: `https://sandbox.asaas.com/api/v3/customers/${customer_id}`,
-      headers: {'Content-Type': 'application/json', 'access_token': api_key}},
-      function (error, response, body) {
-        if(error || response.statusCode > 300 ) reject(error)
-        resolve(JSON.parse(body))
-      });
-  })
-}
+
 
 
 /*  public api */
@@ -60,58 +51,74 @@ async function tester(req,res,next){
   }catch(err){next(err)}
 }
 /* from asaas */
-function save({name,email,password,customer,subscription}){
-  return new Promise(async (resolve,reject)=>{
-    try{
-      const exists = await conn("students").where({email});
-      if(exists.length) reject("Email já Existe")
-      const salt = bcrypt.genSaltSync(10);
-      password = await bcrypt.hashSync(password, salt)
-      path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-      const expiration = ( Date.now() + (6*(10**8)) ) + "";
+  function rescueAsaasCostumer(customer_id){
+    return new Promise((resolve,reject)=>{
+      request({ method: 'GET',url: `https://sandbox.asaas.com/api/v3/customers/${customer_id}`,
+        headers: {'Content-Type': 'application/json', 'access_token': api_key}},
+        function (error, response, body) {
+          if(error || response.statusCode > 300 ) reject(error)
+          resolve(JSON.parse(body))
+        });
+    })
+  }
+  function save({name,email,password,customer,subscription}){
+    return new Promise(async (resolve,reject)=>{
       try{
-        const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password}).returning(queryArray)
-        resolve(usuario)
-      }catch(err){ reject(err)}
-    }catch(err){reject(err)}
-  })  
-}
-async function payment(req,res){
-    console.log("evento")
-    const payload = {...req.body};
-    if(payload != null){
-      console.log(payload.event)
-      if(payload.event == 'PAYMENT_CREATED'){ //insert
+        const exists = await conn("students").where({email});
+        if(exists.length) reject("Email já Existe")
+        const salt = bcrypt.genSaltSync(10);
+        password = await bcrypt.hashSync(password, salt)
+        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+        const expiration = ( Date.now() + (6*(10**8)) ) + "";
         try{
-          const {customer,subscription} = {...payload.payment};
-          const {name,email} = await rescueAsaasCostumer(customer);
-          var password =  generatePassword(8) ;
+          const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password}).returning(queryArray)
+          resolve(usuario)
+        }catch(err){ reject(err)}
+      }catch(err){reject(err)}
+    })  
+  }
+  //function to update the expiration when payid
+  //function to send email both when payment created and when payment received
+  async function payment(req,res){
+      console.log("evento")
+      const payload = {...req.body};
+      if(payload != null){
+        console.log(payload.event)
+        if(payload.event == 'PAYMENT_CREATED'){ //insert
           try{
-            const user = await save({name,email,customer,subscription,password})
-            console.log("usuario gerado com sucesso",user)
-          }catch(err){res.sendStatus(200)}
-        } catch(err){res.sendStatus(200)}
-      }else if(payload.event ='PAYMENT_RECEIVED'){
+            const {customer,subscription} = {...payload.payment};
+            const {name,email} = await rescueAsaasCostumer(customer);
+            var password =  generatePassword(8) ;
+            try{
+              const user = await save({name,email,customer,subscription,password})
+              console.log("usuario gerado com sucesso",user)
+              //email de informando o cadastro // senha e email
+            }catch(err){res.sendStatus(200)}
+          } catch(err){res.sendStatus(200)}
+        }else if(payload.event ='PAYMENT_RECEIVED'){
 
-        const {customer,status} = {...payload.payment};
-        if(status != "RECEIVED")return res.sendStatus(200)
-        try{
-          const {name,email} = await rescueAsaasCostumer(customer);
-          const exists = await conn("students").where({email});
-          if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
-          var expiration = exists[0].expiration
-          expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
-          console.log("students updated:" ,exists[0])
+          const {customer,status} = {...payload.payment};
+          if(status != "RECEIVED")return res.sendStatus(200)
           try{
-            const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
-            console.log(usuario) 
+            const {name,email} = await rescueAsaasCostumer(customer);
+            const exists = await conn("students").where({email});
+            if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
+            var expiration = exists[0].expiration
+            expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
+            console.log("students updated:" ,exists[0])
+            try{
+              const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
+              console.log(usuario) 
+              //emaiil de pagamneto efetuado e nota fiscal
+            }catch(err){res.sendStatus(200)}
           }catch(err){res.sendStatus(200)}
-        }catch(err){res.sendStatus(200)}
+        }
       }
-    }
-    return res.sendStatus(200)
+      return res.sendStatus(200)
 
-}
+  }
+
+/*  from admin  */
 async function create(req, res, next) {
   try {
     
@@ -182,16 +189,6 @@ async function remove(req, res, next) {
     next(err)
   }
 }
-/* async function removeAll(req, res, next) {
-  try {
-    const rows = await conn("students").del().whereNot({id:-1})
-    if (rows > 0) return res.sendStatus(204)
-    throw 406
-  } catch (err) {
-    next(err)
-  }
-} */
-/* session */
 async function generateToken(user){
 
   var payload = {
@@ -205,7 +202,6 @@ async function generateToken(user){
   const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
 }
-
 async function genToken(req, res, next) {
   try {
 
@@ -315,7 +311,6 @@ async function updatestudents(req,res,next){
   
   
 } 
-
 /* refatorar */
 async function updateSelf(req,res,next){
   try{
