@@ -24,7 +24,6 @@ async function create(req,res,next){
    
     var {email,name,phone} = {...req.body}
     if(isNull(email) || !isEmail(email))  throw [422,"Existe algo de errado com o e-mail inserido, verifique!"];
-
     if(!isNull(email) && !isString(name))  email == null
     if(!isNull(phone) && !isString(phone)) phone == null
     email = normalizeEmail(email);
