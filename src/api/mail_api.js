@@ -17,7 +17,6 @@ function broadAssign({email,name,phone}){
     if(isNull(name)   || !isString(name))  errors.push({param:"name", msg:"Conte-nos como deseja ser chamado!'"});
     if(!isNull(phone) && phone.length < 8) errors.push({param:"phone", msg:"Ensira um numero de Telefone Valido"});
     if(errors.length) reject([422,errors])
-    email = normalizeEmail(email);
     var FNAME = name.split(' ')[0] || name;
     var LNAME = name.split(' ').slice(1).join(' ') || "";
     const mcData ={
