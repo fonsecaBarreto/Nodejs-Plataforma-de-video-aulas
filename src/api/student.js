@@ -6,7 +6,7 @@ var request = require('request');
 const { cpf } = require('cpf-cnpj-validator');
 const jwt = require("jsonwebtoken");
 var generatePassword = require('password-generator');
-const { query } = require("express");
+const {experimentalAssign} = require("../api/mail_api")
 
 /* imports ^ ^ */
 const api_key =process.env.ASAAS_KEY;
@@ -91,6 +91,11 @@ async function tester(req,res,next){
             var password =  generatePassword(8) ;
             try{
               const user = await save({name,email,customer,subscription,password})
+              try{
+                await experimentalAssign({email,name})
+                console.log("mail chimp done")//
+                //next send email width email and password
+              }catch(err){return res.sendStatus(200)}
               console.log("usuario gerado com sucesso",user)
               //email de informando o cadastro // senha e email
             }catch(err){res.sendStatus(200)}
