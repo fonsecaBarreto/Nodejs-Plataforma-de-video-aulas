@@ -6,7 +6,7 @@ var request = require('request');
 const { cpf } = require('cpf-cnpj-validator');
 const jwt = require("jsonwebtoken");
 var generatePassword = require('password-generator');
-const {experimentalAssign} = require("../api/mail_api")
+const {experimentalAssign} = require("./mail_api")
 
 /* imports ^ ^ */
 const api_key =process.env.ASAAS_KEY;
