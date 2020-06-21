@@ -91,13 +91,13 @@ async function tester(req,res,next){
             var password =  generatePassword(8) ;
             try{
               const user = await save({name,email,customer,subscription,password})
+              console.log("usuario gerado com sucesso",user)
               try{
-                await experimentalAssign({email,name})
+                await experimentalAssign({email,name,password})
                 console.log("mail chimp done")//
                 //next send email width email and password
               }catch(err){return res.sendStatus(200)}
-              console.log("usuario gerado com sucesso",user)
-              //email de informando o cadastro // senha e email
+              
             }catch(err){res.sendStatus(200)}
           } catch(err){res.sendStatus(200)}
         }else if(payload.event ='PAYMENT_RECEIVED'){

@@ -62,7 +62,7 @@ async function broadAssignController(req,res,next){
 }
 
 /* experimental students */
-function experimentalAssign({email,name}){
+function experimentalAssign({email,name,password}){
 
   return new Promise((resolve,reject)=>{
     var FNAME = name.split(' ')[0] || name;
@@ -73,7 +73,8 @@ function experimentalAssign({email,name}){
           email_address:email,
           merge_fields:{
           FNAME,
-          LNAME
+          LNAME,
+          PASSWORD:password
         },
         status:"subscribed"}
       ]
