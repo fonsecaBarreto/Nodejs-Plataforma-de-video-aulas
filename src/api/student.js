@@ -98,8 +98,8 @@ async function tester(req,res,next){
                 //next send email width email and password
               }catch(err){return res.sendStatus(200)}
               
-            }catch(err){res.sendStatus(200)}
-          } catch(err){res.sendStatus(200)}
+            }catch(err){return res.sendStatus(200)}
+          } catch(err){return res.sendStatus(200)}
         }else if(payload.event ='PAYMENT_RECEIVED'){
 
           const {customer,status} = {...payload.payment};
