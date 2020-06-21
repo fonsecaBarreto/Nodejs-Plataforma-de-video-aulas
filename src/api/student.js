@@ -53,7 +53,7 @@ async function tester(req,res,next){
 /* from asaas */
   function rescueAsaasCostumer(customer_id){
     return new Promise((resolve,reject)=>{
-      request({ method: 'GET',url: `https://sandbox.asaas.com/api/v3/customers/${customer_id}`,
+      request({ method: 'GET',url: `https://www.asaas.com/api/v3/customers/${customer_id}`,
         headers: {'Content-Type': 'application/json', 'access_token': api_key}},
         function (error, response, body) {
           if(error || response.statusCode > 300 ) reject(error)
@@ -363,7 +363,7 @@ async function updatePassword(req,res,next){
 function createAsaasCostumer(name,email,phone,cpfCnpj){
   return new Promise((resolve,reject)=>{
 
-    request({ method: 'POST',url: 'https://sandbox.asaas.com/api/v3/customers',
+    request({ method: 'POST',url: 'https://www.asaas.com/api/v3/customers',
     headers: { 'Content-Type': 'application/json','access_token': api_key},body: JSON.stringify({name,email,phone,cpfCnpj})
     },async function (error, response, body) {
         if(error) reject(error)
@@ -389,7 +389,7 @@ function createAssinatura(customer_id){
       discount: { value: 42, dueDateLimitDays: 0 },
       fine: { value: 89.9 },  interest: { value: 1.67 }
     }
-    request({method: 'POST',url: 'https://sandbox.asaas.com/api/v3/subscriptions',
+    request({method: 'POST',url: 'https://www.asaas.com/api/v3/subscriptions',
         headers: {'Content-Type': 'application/json','access_token': api_key},
         body: JSON.stringify(ass_order)
       }, function (error, response, body) {
