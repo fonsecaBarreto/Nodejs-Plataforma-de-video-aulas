@@ -35,6 +35,7 @@ module.exports = app =>{
     if(Array.isArray(error)){
       if(typeof error[1] == 'object')  return res.status(error[0]).json({errors:error[1]})
       if(typeof error[1] == "string") return res.status(error[0]).json({errors:[{msg:error[1]}]})
+      if(typeof error[1] == 'undefined') { return res.status(error[0]).json({errors:[{msg:'informação Desconhecida'}]})}
     } 
     res.status(500).send(error) 
   })

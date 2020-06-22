@@ -46,9 +46,10 @@ const uploadToAws = (buffer,name)=>{
 const upload = multer({storage:multer.memoryStorage()});
 
 const image =async (req,res,next)=>{
+
     upload.single("image")(req,res,async (err)=>{
         try{
-            if(err || req.file==undefined) throw [422, err];
+            if(err || req.file==undefined) return next([422, err]);
             const w= req.query.w || 1080, h = req.query.h || .75;
             const payload = await resize(req.file,{w,h});
             const dir = "temp/uploads/"
