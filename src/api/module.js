@@ -7,6 +7,7 @@ const querySelect = ["id","name","parentId","description","picture","notation",
 async function archive(req,res,next){
   try{
     const {archived} = {...req.body}
+    console.log(archived)
     const id = req.params.id;
     const errors =[];
     if(archive == null || archive == undefined || (typeof archived != "boolean")) errors.push(new BuildError("Defina uma valor Válido Para 'Arquivado'","archived"))
@@ -42,9 +43,11 @@ async function indexModuleChilds(req,res,next){
 }
 async function indexModuleExercises(req,res,next){
   try{
+    const admin = req.admin;
     const {id,name,description,video,picture} = await conn("modules").where({path:req.params.module}).select(["id","picture","name","description","video"]).first();
+    const query =  (admin != undefined) ? {module:id} : {module:id,archived:false}
     const exercises = await conn("exercises")
-    .where({module:id,archived:false})
+    .where({...query})
     .orderBy("notation","cresc")
 
 

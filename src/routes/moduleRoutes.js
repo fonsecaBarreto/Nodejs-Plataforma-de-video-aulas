@@ -6,6 +6,12 @@ const student = require("../api/student");
 Router.get("/prime",student.validateToken, indexPrime)
 Router.get("/indexModuleChilds/:module",student.validateToken, indexModuleChilds)
 Router.get("/exercises/:module",student.validateToken,indexModuleExercises)
+
+
+
+
+
+Router.get("/exercisesbyModule/:module",validateToken,indexModuleExercises)
 Router.put("/archive/:id",validateToken,archive)
 
 
