@@ -101,7 +101,7 @@ async function tester(req,res,next){
         }else if(payload.event ='PAYMENT_RECEIVED'){
           const {customer,status} = {...payload.payment};
           console.log(customer,status)
-          if(!["PAYMENT_CONFIRMED","PAYMENT_RECEIVED"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
+          if(!["CONFIRMED","RECEIVED_IN_CASH"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
 
           try{
             const {name,email} = await rescueAsaasCostumer(customer);
