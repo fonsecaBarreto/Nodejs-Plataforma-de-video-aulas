@@ -1,10 +1,12 @@
 const Router = require("express").Router()
 const {index,create,remove,indexById,find} = require("../api/emailSignature");
 const {validateToken} = require( "../api/admin")
-const {broadAssignController,experimentalRequest} = require("../api/mail_api")
+const {broadAssignController,experimentalRequest,captivatedRequest} = require("../api/mail_api")
 
 Router.post("/subscribe",broadAssignController);
-Router.post("/subscribeteste",experimentalRequest);
+
+
+Router.post("/subscribeteste",captivatedRequest);
 
 
 

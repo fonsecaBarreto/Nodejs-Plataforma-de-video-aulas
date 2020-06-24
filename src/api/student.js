@@ -6,7 +6,7 @@ var request = require('request');
 const { cpf } = require('cpf-cnpj-validator');
 const jwt = require("jsonwebtoken");
 var generatePassword = require('password-generator');
-const {experimentalAssign} = require("./mail_api")
+const {experimentalAssign,captivatedAssign} = require("./mail_api")
 
 /* imports ^ ^ */
 const api_key =process.env.ASAAS_KEY;
@@ -91,11 +91,9 @@ async function tester(req,res,next){
             var password =  generatePassword(8) ;
             try{
               const user = await save({name,email,customer,subscription,password})
-              console.log("usuario gerado com sucesso",user)
+              console.log("usuario cadastrado ",user.email)
               try{
-                await experimentalAssign({email,name,password})
-                console.log("mail chimp done")//
-                //next send email width email and password
+                await experimentalAssign({email,name,password}) 
               }catch(err){return res.sendStatus(200)}
               
             }catch(err){return res.sendStatus(200)}
@@ -108,15 +106,18 @@ async function tester(req,res,next){
             const {name,email} = await rescueAsaasCostumer(customer);
             const exists = await conn("students").where({email});
             if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
+
             var expiration = exists[0].expiration
             expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
             console.log("students updated:" ,exists[0])
-            try{
+            try{ 
               const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
-              console.log(usuario) 
-              //emaiil de pagamneto efetuado e nota fiscal
-            }catch(err){res.sendStatus(200)}
-          }catch(err){res.sendStatus(200)}
+              console.log(usuario) ;
+              try{
+                await captivatedAssign({email,name})
+              }catch(err){return res.sendStatus(200)}
+            }catch(err){return res.sendStatus(200)}
+          }catch(err){return res.sendStatus(200)}
         }
       }
       return res.sendStatus(200)
@@ -152,7 +153,7 @@ async function create(req, res, next) {
       }
 
       if(!isNull(email)){
-        email = normalizeEmail(email);
+        email = email.toLowerCase()
         const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
         if((studentSameEmail).length) throw [422, "Email já cadastrado."];
       }
