@@ -91,7 +91,7 @@ async function tester(req,res,next){
             var password =  generatePassword(8) ;
             try{
               const user = await save({name,email,customer,subscription,password})
-              console.log("usuario cadastrado ",user.email)
+              console.log("usuario cadastrado ",user)
               try{
                 await experimentalAssign({email,name,password}) 
               }catch(err){return res.sendStatus(200)}
@@ -99,9 +99,10 @@ async function tester(req,res,next){
             }catch(err){return res.sendStatus(200)}
           } catch(err){return res.sendStatus(200)}
         }else if(payload.event ='PAYMENT_RECEIVED'){
-
           const {customer,status} = {...payload.payment};
-          if(status != "RECEIVED")return res.sendStatus(200)
+          if(status != "RECEIVED"){console.log("pagamento nao erecebido")
+            return res.sendStatus(200)
+          }
           try{
             const {name,email} = await rescueAsaasCostumer(customer);
             const exists = await conn("students").where({email});
@@ -109,6 +110,7 @@ async function tester(req,res,next){
 
             var expiration = exists[0].expiration
             expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
+            console.log(expiration)
             console.log("students updated:" ,exists[0])
             try{ 
               const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
@@ -116,6 +118,8 @@ async function tester(req,res,next){
               try{
                 await captivatedAssign({email,name})
               }catch(err){return res.sendStatus(200)}
+
+
             }catch(err){return res.sendStatus(200)}
           }catch(err){return res.sendStatus(200)}
         }
