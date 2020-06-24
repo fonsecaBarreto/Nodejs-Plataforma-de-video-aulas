@@ -1,7 +1,10 @@
-const bp = require("body-parser"), cors = require("cors"), json2xls = require('json2xls');
+const bp = require("body-parser"), cors = require("cors"), 
+ compression = require("compression");
+
+ //json2xls = require('json2xls'),
 module.exports = app =>{
   app.use(cors())
   app.use(bp.json());
   app.use(bp.urlencoded({extended:false}))
-  app.use(json2xls.middleware);
+  app.use(compression())
 }
