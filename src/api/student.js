@@ -101,6 +101,8 @@ async function tester(req,res,next){
         }else if(payload.event ='PAYMENT_RECEIVED'){
           const {customer,status} = {...payload.payment};
           console.log(customer,status)
+          if(!["PAYMENT_CONFIRMED","PAYMENT_RECEIVED"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
+
           try{
             const {name,email} = await rescueAsaasCostumer(customer);
             const exists = await conn("students").where({email});
@@ -108,7 +110,7 @@ async function tester(req,res,next){
             var expiration = exists[0].expiration
             expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
             console.log(expiration)
-            console.log("students updated:" ,exists[0])
+            console.log("students updated:" ,exists[0].id)
             try{ 
               const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
               console.log(usuario) ;
