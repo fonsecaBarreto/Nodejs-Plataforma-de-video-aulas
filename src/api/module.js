@@ -1,7 +1,7 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
 const querySelect = ["id","name","parentId","description","picture","notation",
-"archived","restrict","path","video","access","views","votes"];
+"archived","restrict","path","video","access","views","votes","attachment"];
 
 /*  */
 async function archive(req,res,next){
@@ -44,13 +44,11 @@ async function indexModuleChilds(req,res,next){
 async function indexModuleExercises(req,res,next){
   try{
     const admin = req.admin;
-    const {id,name,description,video,picture} = await conn("modules").where({path:req.params.module}).select(["id","picture","name","description","video"]).first();
+    const {id,name,description,video,picture,attachment} = await conn("modules").where({path:req.params.module}).select(["id","picture","name","description","video","attachment"]).first();
     const query =  (admin != undefined) ? {module:id} : {module:id,archived:false}
     const exercises = await conn("exercises")
     .where({...query})
     .orderBy("notation","cresc")
-
-
     if(exercises && exercises.length){
       await Promise.all(exercises.map(async e=>{
         try{
@@ -59,7 +57,8 @@ async function indexModuleExercises(req,res,next){
         }catch(err){}
       }))
     }
-    res.json({name,description,video,picture,children:[...exercises]})
+  
+    res.json({name,description,video,picture,attachment,children:[...exercises]})
   }catch(err){next(err)}
 }
 async function indexPrime(req,res,next){
@@ -101,7 +100,7 @@ async function indexById(req,res,next){
 /*  */
 async function create(req,res,next){
   try{
-    const {name,parentId,description,picture,notation,restrict,video} = {...req.body}
+    const {name,parentId,description,picture,notation,restrict,video,attachment} = {...req.body}
     const id = req.params.id
     const errors = [];
     if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
@@ -112,8 +111,9 @@ async function create(req,res,next){
     if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
     if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
     if(!isNull(video) && !isString(video)) errors.push(BuildError("Formato de video Incorreto", "video"));
+    if(!isNull(attachment) && !isObject(attachment)) errors.push(BuildError("Erro ao Carregar Anexo", "attachment"));
+  
     if(errors.length) throw [422,errors]
-
     if(parentId != undefined && parentId != null) { // if aprent Exists
       const parentExists = await conn("modules").where({id:parentId});
       if(!parentExists.length) throw [422, "Modulo Pai desconhecida"];
@@ -132,10 +132,10 @@ async function create(req,res,next){
       const sameName = await conn("modules").where({name}); // if post check is anme already exists
       if(sameName.length) throw [422, "Modulo ja Registrada"];
 
-      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video}).returning(["id","notation",'name',"parentId","description","picture","restrict","video"]);
+      const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video,attachment}).returning(querySelect);
       return res.json(modules)
     }else{
-      const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video}).where({id}).returning(["id","notation","name","parentId","description","picture","restrict","video"]);
+      const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video,attachment}).where({id}).returning(querySelect);
       return res.json(modules)
     }
     
