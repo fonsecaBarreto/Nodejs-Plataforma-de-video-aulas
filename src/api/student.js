@@ -100,6 +100,7 @@ async function tester(req,res,next){
           } catch(err){return res.sendStatus(200)}
         }else if(payload.event ='PAYMENT_RECEIVED'){
           const {customer,status} = {...payload.payment};
+          console.group(customer,status)
           if(status != "RECEIVED"){console.log("pagamento nao erecebido")
             return res.sendStatus(200)
           }
