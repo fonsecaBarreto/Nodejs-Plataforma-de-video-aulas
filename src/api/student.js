@@ -100,15 +100,11 @@ async function tester(req,res,next){
           } catch(err){return res.sendStatus(200)}
         }else if(payload.event ='PAYMENT_RECEIVED'){
           const {customer,status} = {...payload.payment};
-          console.group(customer,status)
-          if(status != "RECEIVED"){console.log("pagamento nao erecebido")
-            return res.sendStatus(200)
-          }
+          console.log(customer,status)
           try{
             const {name,email} = await rescueAsaasCostumer(customer);
             const exists = await conn("students").where({email});
             if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
-
             var expiration = exists[0].expiration
             expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
             console.log(expiration)
