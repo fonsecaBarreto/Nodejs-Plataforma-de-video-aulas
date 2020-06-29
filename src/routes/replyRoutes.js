@@ -1,9 +1,10 @@
 const Router = require("express").Router()
-const {index,create,remove,indexById,closeCase,indexByStudent} = require("../api/exercisereply");
+const {review,index,create,remove,indexById,closeCase,indexByStudent} = require("../api/exercisereply");
 const {validateToken} = require( "../api/admin")
 const student = require("../api/student")
 
 
+Router.put("/review/:id",student.validateToken,review)
 
 Router.post("/send/:exercise",student.validateToken,create)
 

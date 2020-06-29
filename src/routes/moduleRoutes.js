@@ -3,6 +3,9 @@ const {index,create,remove,getJsonTree,indexById,indexPrime,indexModuleChilds,in
 const {validateToken} = require( "../api/admin");
 const student = require("../api/student");
 
+
+
+
 Router.get("/prime",student.validateToken, indexPrime)
 Router.get("/indexModuleChilds/:module",student.validateToken, indexModuleChilds)
 Router.get("/exercises/:module",student.validateToken,indexModuleExercises)

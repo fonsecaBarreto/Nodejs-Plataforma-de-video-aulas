@@ -99,7 +99,7 @@ async function closeCase(req,res,next){//admin fuciton
     if(isNull(id)) errors.push(BuildError("Avaliação não identificada","id"))
     if(!isNull(achievement) && isNaN(achievement)) errors.push(BuildError("Valor de achievement deve ser um numero inteiro","feedback")) 
     if(errors.length) throw [422,errors]
-    const reply = await conn("exercisesreplies").where({id}).select("exercise").first()
+    const reply = await conn("exercisesreplies").where({id}).select(["exercise","closed"]).first()
     if(!reply || reply.closed==true) throw [406,"Indisponivel"]
 
     console.log(achievement)
@@ -114,5 +114,14 @@ async function closeCase(req,res,next){//admin fuciton
 
   //gives feed back and set it as solved or not
 }
+async function review (req,res,next){
 
-module.exports = {index,indexById,create,remove,closeCase,indexByStudent}
+  try{
+    const id = req.params.id;
+    const reply = await conn("exercisesreplies").where({id}).select(["exercise","revised","closed"]).first()
+    if(!reply || reply.revised==true || reply.closed == false) throw [406,"Indisponivel"]
+    await conn("exercisesreplies").where({id}).update({revised:true})
+    res.sendStatus(204)
+  }catch(err){next(err)}
+} 
+module.exports = {review,index,indexById,create,remove,closeCase,indexByStudent}

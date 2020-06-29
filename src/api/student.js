@@ -10,7 +10,7 @@ const {experimentalAssign,captivatedAssign} = require("./mail_api")
 
 /* imports ^ ^ */
 const api_key =process.env.ASAAS_KEY;
-var queryArray = ["id","name","email","points","picture","path","expiration","customer_id"]
+var queryArray = ["id","name","email","points","picture","path","expiration","customer_id","expiration"]
 
 async function concatPoints(student,exercise,achievement){
   try{
@@ -131,7 +131,7 @@ async function tester(req,res,next){
 async function create(req, res, next) {
   try {
     
-    var {name,email,password,password_repeat,notes,picture,points=0} = {...req.body}
+    var {name,email,password,password_repeat,notes,picture,points=0,expiration} = {...req.body}
       const errors = [];
       const id= req.params.id || null;
       if(id == null){
@@ -142,6 +142,7 @@ async function create(req, res, next) {
         if(!isNull(points)  && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
         if(!isNull(notes)   && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
         if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
+        if(!isNull(expiration) && isNaN(expiration))  errors.push(BuildError("expiration must be a number motherfucker.","expiration"))
         if (errors.length) throw [422, errors];
 
       }else{ // on update
@@ -152,6 +153,7 @@ async function create(req, res, next) {
         if(!isNull(points)    && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
         if(!isNull(notes)     && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
         if(!isNull(picture)   && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
+        if(!isNull(expiration) && isNaN(expiration))  errors.push(BuildError("expiration must be a number motherfucker.","expiration"))
         if (errors.length) throw [422, errors];
       }
 
@@ -166,23 +168,21 @@ async function create(req, res, next) {
         password = await bcrypt.hashSync(password, salt)
       }
    
-      var path = null;
       if(!isNull(name)){
+        var path = null;
         path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
        .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
      }
-    
-      console.log("all fine")
       if(isNull(id)){
-
-        const expiration = ( Date.now() + (6*(10**8)) ) + ""
+        expiration = ( Date.now() + (6*(10**8)) ) + ""
         const result = await conn("students").insert({picture,name,email,password,
-        points,notes,path,authorized:false,expiration}).returning(["path","id","name","email","points","picture"]);
+        points,notes,path,authorized:false,expiration}).returning(queryArray);
         console.log(result)
         res.json(result[0])
       }else{
-
-        const result = await conn("students").update({picture,name,email,password,points,notes,path}).where({id}).returning(["path","id","name","email","points","picture"]);
+        console.log("atuizando",id);
+        console.log("expiraction")
+        const result = await conn("students").update({picture,name,email,password,points,notes,path,expiration}).where({id}).returning(queryArray);
         res.json(result[0])
       }
   } catch (err) {
@@ -206,7 +206,7 @@ async function generateToken(user){
     points:user.points,
     picture:user.picture,
     email:user.email,
-    exp: Date.now() + (1296**9)
+    exp: Date.now() + (30*(10**7))
   }
   const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
@@ -226,8 +226,7 @@ async function genToken(req, res, next) {
     if (samePassword !== true) throw [401, "Senha incorreta"] 
     var resto = Number(user.expiration) - Date.now();
     console.log(resto)
-    if(resto <= 0) throw [401,"Conta Desativado, entre em contato com o Suporte"]
-    /* if(user.authorized == null || user.authorized == false) throw [401,"Conta Desativado, entre em contato com o Suporte"]*/
+    if(resto <= 0) throw [401,"Conta Desativada, entre em contato com o Suporte"]
     const token = await generateToken(user);
     res.json({accessToken: token})
   } catch (err) {
@@ -243,6 +242,7 @@ async function validateToken(req, res, next) {
       jwt.verify(parts[1], process.env.USER_TOKEN_SECRET, (err, decoded) => {
         if (err) throw [401, "Acesso Negado"];
         if ((decoded.exp - Date.now()) <= 0) throw [403, "Acesso expirado"]
+   
         req.user = decoded;
         return next()
       })

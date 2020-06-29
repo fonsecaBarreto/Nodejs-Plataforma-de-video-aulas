@@ -165,15 +165,13 @@ async function create(req,res,next){
     }else{
       const post = await  conn("posts").update({title,description,content,keys,category,picture,path,author}).where({id}).returning(['id',"title","description","content","keys","category","picture","path"]);
       res.json(post);
-       (post)
+
     }
   }catch(err){next(err)}
 }
 async function remove(req,res,next){
   try{
-     ("deleting")
     const rows = await conn("posts").del().where({id:req.params.id});
-     (rows)
     if(rows == undefined || rows == null || rows === 0 ) throw 406;
     res.sendStatus(204)
   }catch(err){next(err)}

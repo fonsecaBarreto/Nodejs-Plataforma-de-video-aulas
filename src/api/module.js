@@ -31,14 +31,40 @@ async function index(req,res,next){
     res.json(modules)
   }catch(err){next(err)}
 }
+
 async function indexModuleChilds(req,res,next){
   try{
     const {id,name,description} = await conn("modules").where({path:req.params.module}).select(["id","name","description"]).first();
 
     var modules = await conn("modules").where({parentId:id,archived:false})
     .select(["id","name","path","description","picture","notation"])
-    .orderBy('notation', 'cresc')
+    .orderBy('notation', 'cresc');
+
+    modules = await Promise.all(modules.map(async m =>{
+      try{
+        var exercisesCount = await conn("exercises").where({module:m.id}).count().first();
+        m.exercisesAmount = Number(exercisesCount.count)
+      }catch(err){next(err)}
+      try{
+        var exercises = await conn("exercises").where({module:m.id}).select(["id"]);
+        var replied = 0
+        var notRevised = 0;
+        await Promise.all(exercises.map(async ee=>{
+          await conn("exercisesreplies").where({exercise:ee.id})
+          .then(resp=>{if(resp.length)replied+=1})
+          
+          await conn("exercisesreplies").where({exercise:ee.id,revised:false,closed:true})
+          .then(resp=>{if(resp.length)notRevised+=1})
+        }))
+        m.exercisesReplied = replied
+        m.exercisesNotRevised = notRevised
+      }catch(err){next(err)}
+
+
+      return m;
+    }))
     res.json({name,description,children:[...modules]})
+    //exercises conuyt
   }catch(err){next(err)}
 }
 async function indexModuleExercises(req,res,next){
@@ -46,14 +72,15 @@ async function indexModuleExercises(req,res,next){
     const admin = req.admin;
     const {id,name,description,video,picture,attachment} = await conn("modules").where({path:req.params.module}).select(["id","picture","name","description","video","attachment"]).first();
     const query =  (admin != undefined) ? {module:id} : {module:id,archived:false}
-    const exercises = await conn("exercises")
-    .where({...query})
+    const exercises = await conn("exercises").where({...query})
     .orderBy("notation","cresc")
+
     if(exercises && exercises.length){
       await Promise.all(exercises.map(async e=>{
         try{
           const reply = await conn("exercisesreplies").where({student:req.user.id,exercise:e.id}).first()
           if(reply) e.reply = reply
+          console.log(reply)
         }catch(err){}
       }))
     }
@@ -70,19 +97,16 @@ async function indexPrime(req,res,next){
     .select(querySelect)
     .orderBy('notation', 'cresc')
 
-    modules = modules.filter(m=>{
 
+    //filter
+    modules = modules.filter(m=>{
       if(m.restrict == null) return m
       if(m.restrict != null && m.restrict.id == null) return m
-      else if(m.restrict != null && m.restrict.id != null && m.restrict.id == user.id)
-       return m;
-  
-      
-        
-        
-  
-      
+      else if(m.restrict != null && m.restrict.id != null && m.restrict.id == user.id)return m;
     })
+ 
+/* 
+    */
     
 
     res.json(modules)

@@ -2,6 +2,8 @@ const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isObject, isString, isNumber} = require("../api/validation")
 const {indexByStudent_Module} = require("../api/exercisereply");
 const selectQuery =["notation","enunciation","type","options","resolution","tip","attachment","achievement","module","id","restriction","archived"]
+
+
 async function archive(req,res,next){
   try{
     const {archived} = {...req.body}
