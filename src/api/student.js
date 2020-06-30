@@ -235,7 +235,7 @@ async function payment(req,res){
         try{
           await paymentCreated(payload)
         }catch(err){console.log(err)}
-      }else if(payload.event ='PAYMENT_RECEIVED'){
+      }else if(payload.event == 'PAYMENT_RECEIVED' || payload.event == "PAYMENT_CONFIRMED"){
         try{
           await paymentReceived(payload)
         }catch(err){console.log(err)}
