@@ -195,7 +195,7 @@ function paymentCreated(payload){
 }
 const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH"]
 function paymentReceived(payload){
-  return new Promise((resolve,reject)=>{
+  return new Promise(async (resolve,reject)=>{
     const {customer,status} = {...payload.payment};
     if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()}
     try{
