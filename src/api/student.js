@@ -214,7 +214,7 @@ function paymentReceived(payload){
         try{
           await captivatedAssign({email,name})
           console.log("audiencia cativa mailchimp")
-        }catch(err){console.lgo("mail chimp audicente error")}
+        }catch(err){console.log("mail chimp audicente error")}
 
         resolve();
       }catch(err){console.log ("---x Incerteza sobre Aluno");
