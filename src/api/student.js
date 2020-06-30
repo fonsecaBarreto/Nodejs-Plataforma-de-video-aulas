@@ -201,7 +201,7 @@ async function payment(req,res){
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
           await paymentReceived(payload)
-        }catch(err){}
+        }catch(err){console.log(err)}
        /*  try{ 
           const {customer,subscription} = {...payload.payment};
           const {name,email} = await rescueAsaasCostumer(customer);
