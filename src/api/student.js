@@ -1,16 +1,253 @@
 const conn = require("../config/sqlConnection");
-const {isNull, BuildError, isString , isEmail, isObject} = require("./validation")
+const {isNull, BuildError, isString ,isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
-var normalizeEmail = require('normalize-email');
 var request = require('request');
 const { cpf } = require('cpf-cnpj-validator');
 const jwt = require("jsonwebtoken");
 var generatePassword = require('password-generator');
 const {experimentalAssign,captivatedAssign} = require("./mail_api")
-
-/* imports ^ ^ */
+/* imports */
 const api_key =process.env.ASAAS_KEY;
 var queryArray = ["id","name","email","points","picture","path","expiration","customer_id","expiration"]
+
+/*  from admin  */
+function eRepliesMetrics(users){
+  return new Promise(async(resolve,reject)=>{
+    try{
+      users =  await Promise.all(users.map(async student=>{
+        student.exercises = (await conn("exercisesreplies").where({student:student.id}).count().first()).count;
+        student.onhold = (await conn("exercisesreplies").where({student:student.id,closed:false}).count().first()).count;
+        return student
+      }))
+      resolve(users)
+    }catch(err){reject(err)}
+  })
+}
+function find(offset=0,limit=Infinity,id=null,sort="created_at",select=queryArray,verbose=true){
+  return new Promise(async (resolve,reject)=>{
+    var query = id == null ? {} : {id};
+    try {
+      var users = await conn("students").where(query).select(select)
+      .orderBy(sort, 'desc')
+      .offset(offset)
+      .limit(limit);
+
+      if(!users.length)return reject([422,"Usuario Inexistente"])
+
+      if(verbose == true){
+        eRepliesMetrics(users)
+        .then(users=>{resolve(users)})
+        .catch(err=>reject([500,err]))
+      }else{
+        resolve(users)
+      }
+    }catch(err){return reject([500,err])}
+  })
+}
+/* methods */
+  const Validator = require("fastest-validator");
+  const v = new Validator();
+  const CreateSchema = {
+    name:            {type:"string"},
+    email:           {type:"string", min:3},
+    password:        {type:"string", min:3},
+    password_repeat: {type:"equal",  field: "password" },
+    picture:         {type:"object", optional:true},
+    points:          {type:"number", convert:true, default:0},
+    expiration:      {type:"number", convert:true, default: (Date.now() + 8*(10**8))},
+  }; 
+  const UpdateSchema = {
+    name:            {type:"string",                     optional:true},
+    email:           {type:"string", min:3,              optional:true},
+    password:        {type:"string", min:3,              optional:true},
+    password_repeat: {type:"equal" , field: "password",  optional:true},
+    picture:         {type:"object",                     optional:true},
+    points:          {type:"number", convert:true,       optional:true},
+    expiration:      {type:"number", convert:true,       optional:true},
+  }; 
+  const checkOnCreate = v.compile(CreateSchema);
+  const checkOnUpdate = v.compile(UpdateSchema);
+
+  async function tocreate(data,id){
+    return new Promise(async (resolve,reject)=>{
+      if(id == null){
+        var errors =  checkOnCreate(data) ;if(errors === true) errors =[];
+        if(errors.length) return reject([422,errors])
+      }else if(id != null){
+        var errors =  checkOnUpdate(data) ;if(errors === true) errors =[];
+        if(errors.length) return reject([422,errors])
+      }
+      var {name,email,password,picture,points,expiration} = {...data}
+      console.log(id)
+      if(!isNull(email)){ // email to lower case and verify if there is another client with the same email
+        email = email.toLowerCase()
+        try{
+          const studentSameEmail = await conn("students").whereNot({id:id||null}).andWhere({email}).select("email");
+          if((studentSameEmail).length) return reject([422, "Email já cadastrado."]);
+        }catch(err){return reject([500,err])}
+      }
+      if(!isNull(password)){ // encrypt the password
+        const salt = bcrypt.genSaltSync(10);
+        try{
+          password = await bcrypt.hashSync(password, salt)
+        }catch(err){return reject([500,err])}
+      }
+      if(!isNull(name)){ // create the called 'path'. it is something like a public id;
+        var path = null; // the name normalized
+        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+      }
+      if(isNull(id)){
+        expiration = expiration+"" || ( Date.now() + (6*(10**8)) ) + ""
+        try{
+          const result = await conn("students").insert({name,email,password,picture,points,path,expiration})
+          .returning(queryArray);
+          return resolve(result[0])
+        }catch(err){return reject([500,err])}
+      }else{
+        try{
+          const result = await conn("students")
+          .update({name,email,password,picture,points,path,expiration})
+          .where({id}).returning(queryArray);
+          return resolve(result[0])
+        }catch(err){return reject([500,err])}
+      }
+    })
+  }
+
+/* controllers */
+async function index(req, res, next) {
+  const id = req.params.id 
+  try { var users = await find(0,9999,id);res.json(users)
+  }catch(err){res.status(err[0]).send(err[1])}
+}
+async function indexRanking(req,res,next){
+  try {
+    var {id} = {...req.user};
+    const {name,points,picture} = await conn("students").select("id","name","points","picture").where({id}).first()
+    var all = await conn("students").select(["id","points"]).orderBy("points","desc");
+    var position = all.findIndex((s)=>s.id == id);
+    var ranking = await find(0,10,null,'points',["name","points","picture","id"],false)
+    ranking  = [...ranking, null,null,null,null,null,null,null,null,null,null].filter((u,i)=>i<10)
+
+    res.json({user:{id,name,points,picture,position},ranking})
+  } catch (err) {next(err)}
+}
+async function create(req,res,next){
+  const id = req.params.id 
+  tocreate({...req.body},id)
+  .then(resp=>res.json(resp))
+  .catch(error=>res.status(error[0]).send(error[1]))
+}
+
+/*  */
+/* from asaas */
+function rescueAsaasCostumer(customer_id){
+  return new Promise((resolve,reject)=>{
+    request({ method: 'GET',url: `https://www.asaas.com/api/v3/customers/${customer_id}`,
+      headers: {'Content-Type': 'application/json', 'access_token': api_key}},
+      function (error, response, body) {
+        if(error || response.statusCode > 300 ) reject(error)
+        resolve(JSON.parse(body))
+      });
+  })
+}
+function save({name,email,password,customer,subscription}){
+  return new Promise(async (resolve,reject)=>{
+    try{
+      const exists = await conn("students").where({email});
+      if(exists.length) reject("Email já Existe")
+      const salt = bcrypt.genSaltSync(10);
+      password = await bcrypt.hashSync(password, salt)
+      path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+      const expiration = ( Date.now() + (6*(10**8)) ) + "";
+      try{
+        const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password}).returning(queryArray)
+        resolve(usuario)
+      }catch(err){ reject(err)}
+    }catch(err){reject(err)}
+  })  
+}
+async function payment(req,res){
+    console.log("evento")
+    const payload = {...req.body};
+    if(payload != null){
+      console.log(payload.event)
+      if(payload.event == 'PAYMENT_CREATED'){ //insert
+        try{
+          const {customer,subscription} = {...payload.payment};
+          const {name,email} = await rescueAsaasCostumer(customer);
+          var password =  generatePassword(8) ;
+          try{
+            const user = await save({name,email,customer,subscription,password})
+            console.log("usuario cadastrado ",user)
+            try{
+              await experimentalAssign({email,name,password}) 
+            }catch(err){return res.sendStatus(200)}
+            
+          }catch(err){return res.sendStatus(200)}
+        } catch(err){return res.sendStatus(200)}
+      }else if(payload.event ='PAYMENT_RECEIVED'){
+      /*  */
+        const {customer,status} = {...payload.payment};
+        console.log(customer,status)
+        if(!["CONFIRMED","RECEIVED_IN_CASH"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
+
+        try{
+          const {name,email} = await rescueAsaasCostumer(customer);
+          const exists = await conn("students").where({email});
+          if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
+          var expiration = exists[0].expiration
+          expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
+          console.log(expiration)
+          console.log("students updated:" ,exists[0].id)
+          try{ 
+            const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
+            console.log(usuario) ;
+            try{
+              await captivatedAssign({email,name})
+            }catch(err){return res.sendStatus(200)}
+
+
+          }catch(err){return res.sendStatus(200)}
+        }catch(err){return res.sendStatus(200)}
+
+
+        /*  */
+      }
+    }
+    return res.sendStatus(200)
+
+}
+
+
+
+async function remove(req, res, next) {
+  try{
+    const interactions = await conn("interactions").where({ student: req.params.id})
+    if(interactions.length){
+      await Promise.all(interactions.map(async int=>{
+        try{
+          await conn("interactions").del().where({parentId:int.id}) // deleting childrens
+        }catch(err){}
+      }))
+    }
+    try{
+      await conn("interactions").del().where({ student: req.params.id}) // deleting self
+    }catch(err){}
+  }catch(err){console.log(err)}
+
+  try{
+    await conn("exercisesreplies").del().where({ student: req.params.id}) // deleting self
+  }catch(err){}
+
+
+  try {
+    console.log("deletinig user nwo")
+    const rows = await conn("students").del().where({ id: req.params.id})
+    if (rows > 0) return res.sendStatus(204)
+    throw 406
+  } catch (err) { next(err) } 
+}
 
 async function concatPoints(student,exercise,achievement){
   try{
@@ -23,181 +260,8 @@ async function concatPoints(student,exercise,achievement){
     return true
   }catch(err){return null}
 }
-async function index(req, res, next) {
-  try {
-    var users = await conn("students").select(queryArray);
-      try{
-        users =  await Promise.all(users.map(async student=>{
-          student.exercises = (await conn("exercisesreplies").where({student:student.id}).count().first()).count;
-          student.onhold = (await conn("exercisesreplies").where({student:student.id,closed:false}).count().first()).count;
-          return student
-        }))
-        res.json(users)
-      }catch(err){next(err)}
-  }catch(err){next(err)}
-    
-}
 
-
-
-/*  public api */
-async function tester(req,res,next){
-  console.log("sdfsdfdsf")
-  try{
-    console.log("attepting to save")
-    const user = await save({...req.body})
-    res.json(user)
-
-  }catch(err){next(err)}
-}
-/* from asaas */
-  function rescueAsaasCostumer(customer_id){
-    return new Promise((resolve,reject)=>{
-      request({ method: 'GET',url: `https://www.asaas.com/api/v3/customers/${customer_id}`,
-        headers: {'Content-Type': 'application/json', 'access_token': api_key}},
-        function (error, response, body) {
-          if(error || response.statusCode > 300 ) reject(error)
-          resolve(JSON.parse(body))
-        });
-    })
-  }
-  function save({name,email,password,customer,subscription}){
-    return new Promise(async (resolve,reject)=>{
-      try{
-        const exists = await conn("students").where({email});
-        if(exists.length) reject("Email já Existe")
-        const salt = bcrypt.genSaltSync(10);
-        password = await bcrypt.hashSync(password, salt)
-        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-        const expiration = ( Date.now() + (6*(10**8)) ) + "";
-        try{
-          const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password}).returning(queryArray)
-          resolve(usuario)
-        }catch(err){ reject(err)}
-      }catch(err){reject(err)}
-    })  
-  }
-  //function to update the expiration when payid
-  //function to send email both when payment created and when payment received
-  async function payment(req,res){
-      console.log("evento")
-      const payload = {...req.body};
-      if(payload != null){
-        console.log(payload.event)
-        if(payload.event == 'PAYMENT_CREATED'){ //insert
-          try{
-            const {customer,subscription} = {...payload.payment};
-            const {name,email} = await rescueAsaasCostumer(customer);
-            var password =  generatePassword(8) ;
-            try{
-              const user = await save({name,email,customer,subscription,password})
-              console.log("usuario cadastrado ",user)
-              try{
-                await experimentalAssign({email,name,password}) 
-              }catch(err){return res.sendStatus(200)}
-              
-            }catch(err){return res.sendStatus(200)}
-          } catch(err){return res.sendStatus(200)}
-        }else if(payload.event ='PAYMENT_RECEIVED'){
-          const {customer,status} = {...payload.payment};
-          console.log(customer,status)
-          if(!["CONFIRMED","RECEIVED_IN_CASH"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
-
-          try{
-            const {name,email} = await rescueAsaasCostumer(customer);
-            const exists = await conn("students").where({email});
-            if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
-            var expiration = exists[0].expiration
-            expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
-            console.log(expiration)
-            console.log("students updated:" ,exists[0].id)
-            try{ 
-              const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
-              console.log(usuario) ;
-              try{
-                await captivatedAssign({email,name})
-              }catch(err){return res.sendStatus(200)}
-
-
-            }catch(err){return res.sendStatus(200)}
-          }catch(err){return res.sendStatus(200)}
-        }
-      }
-      return res.sendStatus(200)
-
-  }
-
-/*  from admin  */
-async function create(req, res, next) {
-  try {
-    
-    var {name,email,password,password_repeat,notes,picture,points=0,expiration} = {...req.body}
-      const errors = [];
-      const id= req.params.id || null;
-      if(id == null){
-        if(isNull(name)     || !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
-        if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
-        if(isNull(password) || !isString(password)) errors.push(BuildError("Senha Inválida.","password"))
-        if( password !== password_repeat)           errors.push(BuildError("Senhas não coincidem.","password_repeat"))
-        if(!isNull(points)  && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
-        if(!isNull(notes)   && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
-        if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
-        if(!isNull(expiration) && isNaN(expiration))  errors.push(BuildError("expiration must be a number motherfucker.","expiration"))
-        if (errors.length) throw [422, errors];
-
-      }else{ // on update
-        if(!isNull(name)      &&  !isString(name))     errors.push(BuildError("Nome Inválido.","name"));
-        if(!isNull(email)     &&  !isEmail(email))     errors.push(BuildError("Email Inválido.","email"));
-        if(!isNull(password)  &&  !isString(password)) errors.push(BuildError("Senha Inválida.","password"))
-        if(!isNull(password)  && password !== password_repeat)    errors.push(BuildError("Senhas não coincidem.","password_repeat"))
-        if(!isNull(points)    && isNaN(points))       errors.push(BuildError("Pontuação inválida.","points"))
-        if(!isNull(notes)     && !isString(notes))    errors.push(BuildError("Nota inválida.","notes"))
-        if(!isNull(picture)   && !isObject(picture))  errors.push(BuildError("Imagem com formato desconhecido.","picture"))
-        if(!isNull(expiration) && isNaN(expiration))  errors.push(BuildError("expiration must be a number motherfucker.","expiration"))
-        if (errors.length) throw [422, errors];
-      }
-
-      if(!isNull(email)){
-        email = email.toLowerCase()
-        const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
-        if((studentSameEmail).length) throw [422, "Email já cadastrado."];
-      }
-     
-      if(!isNull(password)){
-        const salt = bcrypt.genSaltSync(10);
-        password = await bcrypt.hashSync(password, salt)
-      }
-   
-      if(!isNull(name)){
-        var path = null;
-        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
-       .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-     }
-      if(isNull(id)){
-        expiration = ( Date.now() + (6*(10**8)) ) + ""
-        const result = await conn("students").insert({picture,name,email,password,
-        points,notes,path,authorized:false,expiration}).returning(queryArray);
-        console.log(result)
-        res.json(result[0])
-      }else{
-        console.log("atuizando",id);
-        console.log("expiraction")
-        const result = await conn("students").update({picture,name,email,password,points,notes,path,expiration}).where({id}).returning(queryArray);
-        res.json(result[0])
-      }
-  } catch (err) {
-    next(err)
-  }
-}
-async function remove(req, res, next) {
-  try {
-    const rows = await conn("students").del().where({ id: req.params.id})
-    if (rows > 0) return res.sendStatus(204)
-    throw 406
-  } catch (err) {
-    next(err)
-  }
-}
+/* students */
 async function generateToken(user){
 
   var payload = {
@@ -253,73 +317,7 @@ async function validateToken(req, res, next) {
     next(err)
   }
 }
-async function indexTopPoints(req,res,next){
-  try {
-    var {id} = {...req.user};
-    const {name,points,picture} = await conn("students").select("id","name","points","picture").where({id}).first()
-    var all = await conn("students").select(["id","points"]).orderBy("points","desc");
-    var position = all.findIndex((s)=>s.id == id);
-    var ranking = await conn("students").select(["name","points","picture","id"])
-    .orderBy('points', 'desc')
-    .limit(10)
-    ranking  = [...ranking, null,null,null,null,null,null,null,null,null,null].filter((u,i)=>i<10)
-    res.json({user:{id,name,points,picture,position},ranking})
-  } catch (err) {next(err)}
-}
-async function updatestudents(req,res,next){
-  const emails = [
-    "josilva2422@gmail.com",
-    "edson_m.calazans@hotmail.com",
-    "larakeren@gmail.com",
-    "estelacarvalho96@icloud.com",
-    "patrickderekyee@gmail.com",
-    "thaylasoares4@gmail.com",
-    "luciana.antuness@yahoo.com.br",
-    "mari_martins_13@hotmail.com",
-    "karen.souza17@hotmail.com",
-    "lararrramossantana@gmail.com",
-    "celinabp0609@gmail.com",
-    "hiagoragaza22@gmail.com",
-    "davianebert@gmail.com",
-    "drogariamr_me@hotmail.com",
-    "asdjbahdbas@hotmail.com",
-    "nadiavieiradonascimento123@gmail.com",
-    "lucasfonsecabasdada@hotmail.com",
-    "minhacasaminhavida@hotmail.com",
-    "hiagoragazini22@gmail.com",
-    "lucasmartinsvieira@hotmail.com",
-    "atakeoferreira@gmail.com",
-    "lagosmana15@gmail.com.br",
-    "fabrinedefanti@hotmail.com",
-    "martinsbrunna18@gmail.com",
-    "maggot.sic@hotmail.com",
-    "aop_paixao@hotmail.com",
-    "joaopedro_louzada@hotmail.com",
-    "aanaluiza.figueiredo@hotamil.com",
-    "lucascristinaedson@gmail.com",
-    "laraly96@gmail.com",
-    "jeffersoneambrosio@yahoo.com.br",
-    "majuguerra95@gmail.com",
-    "sthefanymattosaraujo@hotmail.com",
-  ]
-/*   const namePrefix = "Aluno" */
-  var password = "d!9Bfn";
-  const salt = bcrypt.genSaltSync(10);
-  password = await bcrypt.hashSync(password, salt)
-  var done = await conn("students").update({password}).where({password:"d!9Bfn"}).returning(["name","password"]);
 
- /*  const done = await Promise.all(emails.map(async (e,i)=>{
-    let name = namePrefix+(641+i);
-    let path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
-    .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase(); 
-   
-  
-  })) */
-
-  res.json(done)
-  
-  
-} 
 /* refatorar */
 async function updateSelf(req,res,next){
   try{
@@ -335,7 +333,7 @@ async function updateSelf(req,res,next){
     if(isNull(email)    || !isEmail(email))     errors.push(BuildError("Email Invalido","email"));
     if(!isNull(picture) && !isObject(picture))  errors.push(BuildError("imagem com formato desconhecido","picture"))
     if (errors.length) throw [422, errors];
-    email = normalizeEmail(email);
+    email = email.toLowerCase()
     const studentSameEmail = await conn("students").whereNot({id}).andWhere({email}).select("email");
     if((await studentSameEmail).length) throw [422, "ja existe um outro usuario com o mesmo endereço de email"]
     const result = await conn("students").update({picture,name,email}).where({id}).returning(["id","name","email","points","picture"]);
@@ -433,7 +431,7 @@ async function subscription(req,res,next){
     
     
     if(!isNull(email)){
-      email = normalizeEmail(email);
+      email = email.toLowerCase()
       const studentSameEmail = await conn("students").where({email}).select("email");
       if((studentSameEmail).length) throw [422,[{msg:"Email já cadastrado.",param:"email"}]];
     }
@@ -462,8 +460,8 @@ async function subscription(req,res,next){
 
 }
 module.exports = {
-  updatestudents,
-  indexTopPoints,
+  
+  indexRanking,
   index,
   create,
   remove,
@@ -473,7 +471,5 @@ module.exports = {
   updatePassword,
   updateSelf,
   subscription,
-  payment,
-  tester
-
+  payment
 }
