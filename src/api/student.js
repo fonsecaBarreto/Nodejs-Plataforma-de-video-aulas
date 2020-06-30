@@ -68,51 +68,51 @@ function find(offset=0,limit=Infinity,id=null,sort="created_at",select=queryArra
   const checkOnCreate = v.compile(CreateSchema);
   const checkOnUpdate = v.compile(UpdateSchema);
 
-  async function tocreate(data,id){
-    return new Promise(async (resolve,reject)=>{
-      if(id == null){
-        var errors =  checkOnCreate(data) ;if(errors === true) errors =[];
-        if(errors.length) return reject([422,errors])
-      }else if(id != null){
-        var errors =  checkOnUpdate(data) ;if(errors === true) errors =[];
-        if(errors.length) return reject([422,errors])
-      }
-      var {name,email,password,picture,points,expiration} = {...data}
-      
-      if(!isNull(email)){ // email to lower case and verify if there is another client with the same email
-        email = email.toLowerCase()
-        try{
-          const studentSameEmail = await conn("students").whereNot({id:id||null}).andWhere({email}).select("email");
-          if((studentSameEmail).length) return reject([422, "Email já cadastrado."]);
-        }catch(err){return reject([500,err])}
-      }
-      if(!isNull(password)){ // encrypt the password
-        const salt = bcrypt.genSaltSync(10);
-        try{
-          password = await bcrypt.hashSync(password, salt)
-        }catch(err){return reject([500,err])}
-      }
-      if(!isNull(name)){ // create the called 'path'. it is something like a public id;
-        var path = null; // the name normalized
-        path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-      }
-      if(isNull(id)){
-        expiration = expiration+"" || ( Date.now() + (6*(10**8)) ) + ""
-        try{
-          const result = await conn("students").insert({name,email,password,picture,points,path,expiration})
-          .returning(queryArray);
-          return resolve(result[0])
-        }catch(err){return reject([500,err])}
-      }else{
-        try{
-          const result = await conn("students")
-          .update({name,email,password,picture,points,path,expiration})
-          .where({id}).returning(queryArray);
-          return resolve(result[0])
-        }catch(err){return reject([500,err])}
-      }
-    })
-  }
+async function tocreate(data,id){
+  return new Promise(async (resolve,reject)=>{
+    if(id == null){
+      var errors =  checkOnCreate(data) ;if(errors === true) errors =[];
+      if(errors.length) return reject([422,errors])
+    }else if(id != null){
+      var errors =  checkOnUpdate(data) ;if(errors === true) errors =[];
+      if(errors.length) return reject([422,errors])
+    }
+    var {name,email,password,picture,points,expiration} = {...data}
+    
+    if(!isNull(email)){ // email to lower case and verify if there is another client with the same email
+      email = email.toLowerCase()
+      try{
+        const studentSameEmail = await conn("students").whereNot({id:id||null}).andWhere({email}).select("email");
+        if((studentSameEmail).length) return reject([422, "Email já cadastrado."]);
+      }catch(err){return reject([500,err])}
+    }
+    if(!isNull(password)){ // encrypt the password
+      const salt = bcrypt.genSaltSync(10);
+      try{
+        password = await bcrypt.hashSync(password, salt)
+      }catch(err){return reject([500,err])}
+    }
+    if(!isNull(name)){ // create the called 'path'. it is something like a public id;
+      var path = null; // the name normalized
+      path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
+    }
+    if(isNull(id)){
+      expiration = expiration+"" || ( Date.now() + (6*(10**8)) ) + ""
+      try{
+        const result = await conn("students").insert({name,email,password,picture,points,path,expiration})
+        .returning(queryArray);
+        return resolve(result[0])
+      }catch(err){return reject([500,err])}
+    }else{
+      try{
+        const result = await conn("students")
+        .update({name,email,password,picture,points,path,expiration})
+        .where({id}).returning(queryArray);
+        return resolve(result[0])
+      }catch(err){return reject([500,err])}
+    }
+  })
+}
 
 /* controllers */
 async function index(req, res, next) {
@@ -161,94 +161,87 @@ function save({name,email,password,customer,subscription}){
       path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-').replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
       const expiration = ( Date.now() + (6*(10**8)) ) + "";
       try{
-        const usuario = await conn("students").insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password}).returning(queryArray)
+        const usuario = await conn("students")
+        .insert({path,name,email,customer_id:customer,subscription_id:subscription,expiration,password})
+        .returning(queryArray)
         resolve(usuario)
       }catch(err){ reject(err)}
     }catch(err){reject(err)}
   })  
 }
 
-function paymentReceived(payload){
+function paymentCreated(payload){
   return new Promise(async(resolve,reject)=>{
     try{
-      console.log("creating a new student")
+      console.log(" - Asaas Client Created")
       const {customer,subscription} = {...payload.payment};
       const {name,email} = await rescueAsaasCostumer(customer);
       var password =  generatePassword(8) ;
       try{
-        console.log("Cadastrando Usuario ... ")
+        console.log(" -- Cadastrando Usuario em banco de dados... ")
         const user = await save({name,email,customer,subscription,password})
-        console.log("--Usuario cadastrado ",user)
-        try{
-          await experimentalAssign({email,name,password}) 
-          console.log("----entrada na lista audiencia experimental")
-        }catch(err){
-          console.log("----Não foi possivel entrar na audiencia experimental",err);
-          return reject(err)}
-
-        resolve()
-      }catch(err){console.log("--não foi possivel criar usuario");return reject(err)}
-
-    }catch(err){
-      console.log("não foi possivel cadastrar usuario")
+        console.log(" --- Usuario cadastrado ",user)
+          try{
+            await experimentalAssign({email,name,password}) 
+            console.log(" --- Audiencia experimental")
+          }catch(err){console.log(" --- Não foi possivel entrar em audiencia experimental",err);}
+        return resolve()
+      }catch(err){console.log(" ---x não foi possivel criar usuario");
+        return reject(err)}
+    }catch(err){ console.log("--- Incerteza sobre o usuario");
       return reject(err)
     }
+  })
+}
+const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH"]
+function paymentReceived(payload){
+  return new Promise((resolve,reject)=>{
+    const {customer,status} = {...payload.payment};
+    if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()}
+    try{
+      const {name,email} = await rescueAsaasCostumer(customer);
+      try{
+        const exists = await conn("students").where({email}).select(["id","expiration"]);
+        if(!exists.length) {console.log("Aluno não existe em banco de dados");return reject()}
+        const {expiration,id} = {...exists[0]}
+        const LAST_EXPIRATION = expiration;
+        expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
+        try{ 
+          const usuario = await conn("students").where({id}).update({expiration}).returning("*")
+          console.log("usuario atualizado com sucesso")
+          console.lgo(LAST_EXPIRATION,"--->",usuario[0].expiration)
+        }catch(err){console.log("não foi possivel atualizar credito do usuario");return reject()}
+        try{
+          await captivatedAssign({email,name})
+          console.log("audiencia cativa mailchimp")
+        }catch(err){console.lgo("mail chimp audicente error")}
+
+        resolve();
+      }catch(err){console.log ("---x Incerteza sobre Aluno");
+        return reject(err)
+      }
+    }catch(err){console.log("---x Incerteza sobre o cliente Asaas")
+      return reject(err)
+    }
+
   })
 }
 async function payment(req,res){
  
     const payload = {...req.body};
     if(payload != null){
-      console.log(payload.event)
+      console.log("\n",payload.event)
       if(payload.event == 'PAYMENT_CREATED'){ //insert
+        try{
+          await paymentCreated(payload)
+        }catch(err){console.log(err)}
+      }else if(payload.event ='PAYMENT_RECEIVED'){
         try{
           await paymentReceived(payload)
         }catch(err){console.log(err)}
-       /*  try{ 
-          const {customer,subscription} = {...payload.payment};
-          const {name,email} = await rescueAsaasCostumer(customer);
-          var password =  generatePassword(8) ;
-          try{
-            console.log("Cadastrando Usuario ... ",user)
-            const user = await save({name,email,customer,subscription,password})
-            console.log("--Usuario cadastrado ",user)
-            try{
-              await experimentalAssign({email,name,password}) 
-              console.log("----entrada na lista audiencia experimental")
-            }catch(err){console.log("----Não foi possivel entrar na audiencia experimental",err);return res.sendStatus(200)}
-            
-          }catch(err){consloe.log("--não foi possivel criar usuario");return res.sendStatus(200)}
-        } catch(err){return res.sendStatus(200)} */
-
-
-      }else if(payload.event ='PAYMENT_RECEIVED'){
-        const {customer,status} = {...payload.payment};
-        console.log(customer,status)
-        if(!["CONFIRMED","RECEIVED_IN_CASH"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
-
-        try{
-          const {name,email} = await rescueAsaasCostumer(customer);
-          const exists = await conn("students").where({email});
-          if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
-          var expiration = exists[0].expiration
-          expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
-
-          try{ 
-            const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
-            try{
-              await captivatedAssign({email,name})
-            }catch(err){return res.sendStatus(200)}
-
-
-          }catch(err){return res.sendStatus(200)}
-        }catch(err){return res.sendStatus(200)}
-
-
-        /*  */
       }
     }
     return res.sendStatus(200)
-
 }
 
 
