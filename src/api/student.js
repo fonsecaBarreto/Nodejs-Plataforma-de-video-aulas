@@ -182,10 +182,12 @@ function paymentReceived(payload){
         try{
           await experimentalAssign({email,name,password}) 
           console.log("----entrada na lista audiencia experimental")
-        }catch(err){console.log("----Não foi possivel entrar na audiencia experimental",err);return reject(err)}
+        }catch(err){
+          console.log("----Não foi possivel entrar na audiencia experimental",err);
+          return reject(err)}
 
         resolve()
-      }catch(err){consloe.log("--não foi possivel criar usuario");return reject(err)}
+      }catch(err){console.log("--não foi possivel criar usuario");return reject(err)}
 
     }catch(err){
       console.log("não foi possivel cadastrar usuario")
