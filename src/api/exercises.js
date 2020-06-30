@@ -65,7 +65,7 @@ async function indexById(req,res,next){
 async function remove(req,res,next){
   try{
     //check if there is replies to it;
-   console.log("removindg")
+ 
     const id = req.params.id;
     const force=  req.query.f;
     const replies = await conn("exercisesreplies").where({exercise:id})
@@ -85,7 +85,7 @@ const TYPES={
 }
 async function create(req,res,next){
   try{
-    console.log("creating")
+  
     var {notation,enunciation,type,module,options,resolution,tip,attachment,achievement=25} = {...req.body};
     var id = req.params.id;
     const errors = [];

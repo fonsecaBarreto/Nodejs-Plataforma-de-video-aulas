@@ -39,7 +39,7 @@ function save(data){
           const st = await conn('students').select(["name","email"]).where({id:data[0].student}).first()
           data[0].student=st
         }catch(err) {}
-        console.log(data)
+      
         resolve(data)
       }catch(err){reject({status:500,errors:err})}
   })
@@ -145,17 +145,17 @@ async function vote(req,res,next){
       }))
       res(true)
     })
-    console.log(up)
+  
     var votes = up ? votes+1 : votes-1;
     if(up === true){
        votesregisters.votes = [...votesregisters.votes,{date:Date.now(),student:req.user.id}];
     } else{
       votesregisters.votes =  votesregisters.votes.filter(reg=>{
-        console.log("whitinfin")
+       
         reg.student != req.user.id
       })
     }
-    console.log('froim') 
+   
   
     try{
       interaction = await conn("interactions").where({id}).update({votes,votesregisters}).returning([...queryArray,"votesregisters"])

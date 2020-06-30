@@ -7,7 +7,7 @@ const querySelect = ["id","name","parentId","description","picture","notation",
 async function archive(req,res,next){
   try{
     const {archived} = {...req.body}
-    console.log(archived)
+    
     const id = req.params.id;
     const errors =[];
     if(archive == null || archive == undefined || (typeof archived != "boolean")) errors.push(new BuildError("Defina uma valor Válido Para 'Arquivado'","archived"))
@@ -80,7 +80,7 @@ async function indexModuleExercises(req,res,next){
         try{
           const reply = await conn("exercisesreplies").where({student:req.user.id,exercise:e.id}).first()
           if(reply) e.reply = reply
-          console.log(reply)
+        
         }catch(err){}
       }))
     }
@@ -149,7 +149,7 @@ async function create(req,res,next){
     }
     const path = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/([^\w]+|\s+)/g, '-')
       .replace(/\-\-+/g, '-').replace(/(^-+|-+$)/, '').toLowerCase();
-    console.log(notation)
+  
   
     if(id == undefined  || id == null){
    

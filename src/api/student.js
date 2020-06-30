@@ -78,7 +78,7 @@ function find(offset=0,limit=Infinity,id=null,sort="created_at",select=queryArra
         if(errors.length) return reject([422,errors])
       }
       var {name,email,password,picture,points,expiration} = {...data}
-      console.log(id)
+      
       if(!isNull(email)){ // email to lower case and verify if there is another client with the same email
         email = email.toLowerCase()
         try{
@@ -167,27 +167,59 @@ function save({name,email,password,customer,subscription}){
     }catch(err){reject(err)}
   })  
 }
+
+function paymentReceived(payload){
+  return new Promise(async(resolve,reject)=>{
+    try{
+      console.log("creating a new student")
+      const {customer,subscription} = {...payload.payment};
+      const {name,email} = await rescueAsaasCostumer(customer);
+      var password =  generatePassword(8) ;
+      try{
+        console.log("Cadastrando Usuario ... ",user)
+        const user = await save({name,email,customer,subscription,password})
+        console.log("--Usuario cadastrado ",user)
+        try{
+          await experimentalAssign({email,name,password}) 
+          console.log("----entrada na lista audiencia experimental")
+        }catch(err){console.log("----Não foi possivel entrar na audiencia experimental",err);return reject(err)}
+
+        resolve()
+      }catch(err){consloe.log("--não foi possivel criar usuario");return reject(err)}
+
+    }catch(err){
+      console.log("não foi possivel cadastrar usuario")
+      return reject(err)
+    }
+  })
+}
 async function payment(req,res){
-    console.log("evento")
+ 
     const payload = {...req.body};
     if(payload != null){
       console.log(payload.event)
       if(payload.event == 'PAYMENT_CREATED'){ //insert
         try{
+          await paymentReceived(payload)
+        }catch(err){}
+       /*  try{ 
           const {customer,subscription} = {...payload.payment};
           const {name,email} = await rescueAsaasCostumer(customer);
           var password =  generatePassword(8) ;
           try{
+            console.log("Cadastrando Usuario ... ",user)
             const user = await save({name,email,customer,subscription,password})
-            console.log("usuario cadastrado ",user)
+            console.log("--Usuario cadastrado ",user)
             try{
               await experimentalAssign({email,name,password}) 
-            }catch(err){return res.sendStatus(200)}
+              console.log("----entrada na lista audiencia experimental")
+            }catch(err){console.log("----Não foi possivel entrar na audiencia experimental",err);return res.sendStatus(200)}
             
-          }catch(err){return res.sendStatus(200)}
-        } catch(err){return res.sendStatus(200)}
+          }catch(err){consloe.log("--não foi possivel criar usuario");return res.sendStatus(200)}
+        } catch(err){return res.sendStatus(200)} */
+
+
       }else if(payload.event ='PAYMENT_RECEIVED'){
-      /*  */
         const {customer,status} = {...payload.payment};
         console.log(customer,status)
         if(!["CONFIRMED","RECEIVED_IN_CASH"].includes(status)){console.log("nao recebido"); return res.sendStatus(200)}
@@ -198,11 +230,9 @@ async function payment(req,res){
           if(!exists.length) {console.log("costumer inexistente");return res.sendStatus(200)}
           var expiration = exists[0].expiration
           expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
-          console.log(expiration)
-          console.log("students updated:" ,exists[0].id)
+
           try{ 
             const usuario = await conn("students").where({id:exists[0].id}).update({expiration}).returning("*")
-            console.log(usuario) ;
             try{
               await captivatedAssign({email,name})
             }catch(err){return res.sendStatus(200)}
@@ -242,7 +272,7 @@ async function remove(req, res, next) {
 
 
   try {
-    console.log("deletinig user nwo")
+
     const rows = await conn("students").del().where({ id: req.params.id})
     if (rows > 0) return res.sendStatus(204)
     throw 406
@@ -411,10 +441,10 @@ function createAssinatura(customer_id){
 
 }
 async function subscription(req,res,next){
-  console.log("comecou")
+ 
   try{
     var {name,email,password,password_repeat,phone,cpfCnpj} = {...req.body}
-    /*  console.log(cpf.isValid(cpfCnpj)) */
+
 
     cpfCnpj = cpf.format(cpfCnpj);
     const errors = [];

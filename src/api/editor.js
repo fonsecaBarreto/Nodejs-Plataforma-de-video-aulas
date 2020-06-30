@@ -20,17 +20,17 @@ async function create(req,res,next){
       let fromdb = await conn("posts").where({id:f}).first();
       if(!fromdb) errors.push(BuildError(`post id:${f} Inexistente`,"favorites"))
     }))
-    console.log(errors)
+ 
     if(errors.length) throw [422,errors];
     var seven = favorites.filter( (f,i)=>(i<7));
     
     const result   = await conn("websiteconfigs").where({ref:"favorites"})
     if(result.length){
-      console.log("updating")
+    
       const result = await conn("websiteconfigs").where({ref:"favorites"}).update({content:JSON.stringify([...seven])}).returning("*")
       return res.json(result)
     }else{
-      console.log("creating new")
+     
       const result = await conn("websiteconfigs").insert({ref:"favorites",content:JSON.stringify([...seven])}).returning("*")
       return res.json(result)
     }

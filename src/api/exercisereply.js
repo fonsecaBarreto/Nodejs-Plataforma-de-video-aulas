@@ -102,7 +102,7 @@ async function closeCase(req,res,next){//admin fuciton
     const reply = await conn("exercisesreplies").where({id}).select(["exercise","closed"]).first()
     if(!reply || reply.closed==true) throw [406,"Indisponivel"]
 
-    console.log(achievement)
+    
     if(!solved) achievement=null;
     const retorno = await conn("exercisesreplies").where({id}).update({solved,feedback,closed:true,achievement}).returning(["*"])
     retorno[0].exercise = await (conn("exercises").where({id:retorno[0].exercise})).first();
