@@ -203,7 +203,7 @@ function paymentReceived(payload){
       try{
         const exists = await conn("students").where({email}).select(["id","expiration"]);
         if(!exists.length) {console.log("Aluno não existe em banco de dados");return reject()}
-        const {expiration,id} = {...exists[0]}
+        var {expiration,id} = {...exists[0]}
         const LAST_EXPIRATION = expiration;
         expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
         try{ 
