@@ -176,7 +176,7 @@ function paymentReceived(payload){
       const {name,email} = await rescueAsaasCostumer(customer);
       var password =  generatePassword(8) ;
       try{
-        console.log("Cadastrando Usuario ... ",user)
+        console.log("Cadastrando Usuario ... ")
         const user = await save({name,email,customer,subscription,password})
         console.log("--Usuario cadastrado ",user)
         try{
