@@ -199,9 +199,9 @@ function paymentReceived(payload){
     const {customer,status} = {...payload.payment};
     if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()}
     try{
-      const {name,email} = await rescueAsaasCostumer(customer);
+      console.log("customer: ",customer)
       try{
-        const exists = await conn("students").where({email}).select(["id","expiration"]);
+        const exists = await conn("students").where({customer_id:customer}).select(["id","expiration"]);
         if(!exists.length) {console.log("Aluno não existe em banco de dados");return reject()}
         var {expiration,id} = {...exists[0]}
         const LAST_EXPIRATION = expiration;
