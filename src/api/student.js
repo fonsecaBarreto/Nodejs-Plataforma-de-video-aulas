@@ -209,7 +209,7 @@ function paymentReceived(payload){
         try{ 
           const usuario = await conn("students").where({id}).update({expiration}).returning("*")
           console.log("usuario atualizado com sucesso")
-          console.lgo(LAST_EXPIRATION,"--->",usuario[0].expiration)
+          console.log(LAST_EXPIRATION,"--->",usuario[0].expiration)
         }catch(err){console.log("não foi possivel atualizar credito do usuario");return reject()}
         try{
           await captivatedAssign({email,name})
