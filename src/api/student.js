@@ -201,9 +201,9 @@ function paymentReceived(payload){
     try{
       console.log("customer: ",customer)
       try{
-        const exists = await conn("students").where({customer_id:customer}).select(["id","expiration"]);
+        const exists = await conn("students").where({customer_id:customer}).select(["id","expiration","email","name"]);
         if(!exists.length) {console.log("Aluno não existe em banco de dados");return reject()}
-        var {expiration,id} = {...exists[0]}
+        var {expiration,id,email,name} = {...exists[0]}
         const LAST_EXPIRATION = expiration;
         expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
         try{ 
@@ -211,6 +211,7 @@ function paymentReceived(payload){
           console.log("usuario atualizado com sucesso")
           console.log(LAST_EXPIRATION,"--->",usuario[0].expiration)
         }catch(err){console.log("não foi possivel atualizar credito do usuario");return reject()}
+
         try{
           await captivatedAssign({email,name})
           console.log("audiencia cativa mailchimp")
