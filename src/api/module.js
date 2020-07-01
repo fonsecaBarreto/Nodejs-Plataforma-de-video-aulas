@@ -49,11 +49,14 @@ async function indexModuleChilds(req,res,next){
         var replied = 0
         var notRevised = 0;
         await Promise.all(exercises.map(async ee=>{
-          await conn("exercisesreplies").where({exercise:ee.id})
-          .then(resp=>{if(resp.length)replied+=1})
+          await conn("exercisesreplies").where({exercise:ee.id,student:req.user.id})
+          .then(resp=>{
           
-          await conn("exercisesreplies").where({exercise:ee.id,revised:false,closed:true})
+            if(resp.length)replied+=1})
+
+          await conn("exercisesreplies").where({exercise:ee.id,student:req.user.id,revised:false,closed:true})
           .then(resp=>{if(resp.length)notRevised+=1})
+
         }))
         m.exercisesReplied = replied
         m.exercisesNotRevised = notRevised
@@ -96,19 +99,12 @@ async function indexPrime(req,res,next){
     .where({parentId:null,archived:false})
     .select(querySelect)
     .orderBy('notation', 'cresc')
-
-
     //filter
     modules = modules.filter(m=>{
       if(m.restrict == null) return m
       if(m.restrict != null && m.restrict.id == null) return m
       else if(m.restrict != null && m.restrict.id != null && m.restrict.id == user.id)return m;
     })
- 
-/* 
-    */
-    
-
     res.json(modules)
   }catch(err){next(err)}
 }
