@@ -110,6 +110,7 @@ async function index(req,res,next){
     return res.json(data)
   }catch(err){return res.status(err.status).send(err.errors)} 
 }
+
 async function create(req,res,next){
   const student = req.user.id || null;
   try{
