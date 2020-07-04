@@ -193,7 +193,7 @@ function paymentCreated(payload){
     }
   })
 }
-const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH"]
+const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH","RECEIVED"]
 function paymentReceived(payload){
   return new Promise(async (resolve,reject)=>{
     const {customer,status} = {...payload.payment};

@@ -27,7 +27,7 @@ async function create(req,res,next){
     if(isNull(password_repeat) || password_repeat != password) errors.push(BuildError("Senhas não coincidem","password_repeat"))
     if(!isNull(about) && !isString(about)) errors.push(BuildError("Insira uma descrição valida","about"))
     if(errors.length) throw[422,errors]
-    email = normalizeEmail(email);
+  
     var salt = bcrypt.genSaltSync(10);
     password = await bcrypt.hashSync(password,salt)
     if(!id){
