@@ -1,14 +1,14 @@
 const Router = require("express").Router()
 const admin = require("../api/admin")
 const {index,create,remove,genToken,validateToken,
-  updatePassword,indexRanking,updateSelf,subscription,payment}= require("../api/student");
-
-
+  updatePassword,indexRanking,updateSelf}= require("../api/student");
+const {payment} = require("../api/subscription")
+//asass webhook
 Router.post("/pagamento",payment);
 
 /* public */
 Router.post("/signin",genToken);
-Router.post("/subscribe",subscription)
+
 /* users*/
 Router.post("/auth",validateToken,(req,res)=>{res.json(req.user)}) 
 Router.put("/update",validateToken,updateSelf)

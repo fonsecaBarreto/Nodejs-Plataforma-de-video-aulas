@@ -50,13 +50,7 @@ async function remove(req,res,next){
     res.sendStatus(204)
   }catch(err){next(err)}
 }
-/* async function indexByEmail(req,res,next){
-  try{
-    const admin = await getAuthor(req.params.email);
-    if(admin && admin.length)
-    res.json(admin[0])
-  }catch(err){next(err)}
-} */
+
 async function index(req,res,next){
   try{
     const admins = await conn("admins").select(["id","name","username","email","about","picture"]);
@@ -100,7 +94,7 @@ async function validateToken(req,res,next){
         req.admin= decoded;
         return next()
       })
-    } else{ throw [401, "Acesso negados"]}
+    } else{ throw [401, "Acesso negado"]}
   }catch(err){next(err)}
 }
 module.exports = {getAuthor,index,create,remove,genToken,validateToken}
