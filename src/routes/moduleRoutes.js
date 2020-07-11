@@ -1,30 +1,24 @@
 const Router = require("express").Router()
-const {index,create,remove,getJsonTree,indexById,indexPrime,indexModuleChilds,indexModuleExercises,archive} = require("../api/module");
-const {validateToken} = require( "../api/admin");
-const student = require("../api/student");
+const moduleController = require("../api/module") 
+const admin = require( "../api/admin");
+const student = require("../api/student"); 
+/* student */
+Router.get("/indexModuleChilds/:module",student.validateToken,moduleController.indexModuleChilds)
+Router.get("/prime",student.validateToken, moduleController.indexPrime)
+Router.get("/exercises/:module",student.validateToken,moduleController.indexModuleExercises)
 
+/* admin */
 
-
-
-Router.get("/prime",student.validateToken, indexPrime)
-Router.get("/indexModuleChilds/:module",student.validateToken, indexModuleChilds)
-Router.get("/exercises/:module",student.validateToken,indexModuleExercises)
-
-
-
-
-
-Router.get("/exercisesbyModule/:module",validateToken,indexModuleExercises)
-Router.put("/archive/:id",validateToken,archive)
-
-
-
-Router.get("/jsontree",validateToken, getJsonTree);
+Router.get("/exercisesbyModule/:module",admin.validateToken,moduleController.indexModuleExercises)
+Router.put("/archive/:id",admin.validateToken,moduleController.archive);
 Router.route("/")
-  .get(index,validateToken)
-  .post(validateToken,create)
+  .all(admin.validateToken)
+  .get(moduleController.index)
+  .post(moduleController.create)
 Router.route("/:id")
-  .get(indexById,validateToken)
-  .put(validateToken,create)
-  .delete(validateToken,remove)
+  .all(admin.validateToken)
+  .get(moduleController.index)
+  .put(moduleController.create)
+  .delete(moduleController.remove)
+
 module.exports = Router;

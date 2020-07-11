@@ -1,13 +1,9 @@
 const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isString ,isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
-var request = require('request');
-const { cpf } = require('cpf-cnpj-validator');
 const jwt = require("jsonwebtoken");
-var generatePassword = require('password-generator');
-const {experimentalAssign,captivatedAssign} = require("./mail_api")
 /* imports */
-const api_key =process.env.ASAAS_KEY;
+
 var queryArray = ["id","name","email","points","picture","path","expiration","customer_id","expiration","subscription_id"]
 
 /*  from admin  */
@@ -215,6 +211,7 @@ async function genToken(req, res, next) {
 }
 async function validateToken(req, res, next) {
   try {
+    console.log("validating")
     const authorizationHeader = req.headers.authorization
     if (!authorizationHeader || authorizationHeader === undefined) throw [401, "Acesso Negado!"];
     const parts = authorizationHeader.split(" ");

@@ -152,7 +152,6 @@ async function vote(req,res,next){
        votesregisters.votes = [...votesregisters.votes,{date:Date.now(),student:req.user.id}];
     } else{
       votesregisters.votes =  votesregisters.votes.filter(reg=>{
-       
         reg.student != req.user.id
       })
     }
