@@ -31,6 +31,7 @@ function paymentCreated({customer,subscription}){
   })
 }
 const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH","RECEIVED"]
+const PER_MONTH = (30*24*60*60*1000);
 function paymentReceived({customer,status}){
   return new Promise(async (resolve,reject)=>{
     console.log("status:",status)
@@ -42,7 +43,7 @@ function paymentReceived({customer,status}){
 
       var {expiration,id,email,name} = {...student}
       const LAST_EXPIRATION = expiration;
-      expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
+      expiration = ( Number(expiration) + PER_MONTH )+ ""
 
       var usuario = await conn("students").where({id}).update({expiration}).returning(["id","name","expiration"])
       usuario = usuario[0];
