@@ -34,7 +34,7 @@ const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH","RECEIVED"]
 function paymentReceived(customer,status){
   return new Promise(async (resolve,reject)=>{
     console.log("status:",status)
-    if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()}
+  /*   if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()} */
     try{
       console.log("customer: ",customer)
       const student = await conn("students").where({customer_id:customer}).select(["id","expiration","email","name"]).first();
