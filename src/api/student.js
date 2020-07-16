@@ -2,9 +2,7 @@ const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isString ,isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-/* imports */
-
-var queryArray = ["id","name","email","points","picture","path","expiration","customer_id","expiration","subscription_id"]
+var QUERY_ARRAY = ["id","name","email","points","picture","path","expiration","customer_id","expiration","subscription_id"]
 
 /*  from admin  */
 function eRepliesMetrics(users){
@@ -19,7 +17,7 @@ function eRepliesMetrics(users){
     }catch(err){reject(err)}
   })
 }
-function find(offset=0,limit=Infinity,id=null,sort="created_at",select=queryArray){
+function find(offset=0,limit=Infinity,id=null,sort="created_at",select=QUERY_ARRAY){
   return new Promise(async (resolve,reject)=>{
     var query = id == null ? {} : {id};
     try {
@@ -81,14 +79,14 @@ function save({id,name,email,password,picture,points,expiration,customer_id,subs
       expiration = expiration+"" || ( Date.now() + (6*(10**8)) ) + ""
       try{
         const result = await conn("students").insert({name,email,password,picture,points,path,expiration,customer_id,subscription_id})
-        .returning(queryArray);
+        .returning(QUERY_ARRAY);
         return resolve(result[0])
       }catch(err){return reject([500,err])}
     }else{ //updating
       try{
         const result = await conn("students")
         .update({name,email,password,picture,points,path,expiration,customer_id,subscription_id})
-        .where({id}).returning(queryArray);
+        .where({id}).returning(QUERY_ARRAY);
         return resolve(result[0])
       }catch(err){return reject([500,err])}
     }
