@@ -274,6 +274,7 @@ module.exports = {
   indexRanking,
   index,
   create,
+  save,
   remove,
   genToken,
   validateToken,
