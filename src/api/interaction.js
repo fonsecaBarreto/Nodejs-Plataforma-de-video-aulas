@@ -1,6 +1,5 @@
 const Validator = require("fastest-validator");
 const conn = require("../config/sqlConnection");
-const { query } = require("express");
 const v = new Validator(
   { messages:{required:"'{field}' deve conter um valor válido "}}
 );

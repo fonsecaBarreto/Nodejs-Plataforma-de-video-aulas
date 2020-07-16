@@ -62,7 +62,7 @@ class Module{
 //finish creation and remove ....
 class ModuleController{
   constructor(){}
-  find=async ({id,path,parentId,archived},limit=999,offset=0,select=QUERY_SELECT)=>{ // get from db and instace Module Class
+  find = async ({id,path,parentId,archived},limit=999,offset=0,select=QUERY_SELECT)=>{ // get from db and instace Module Class
     var query = id ? {id} :{}
     query = path     !== undefined ? {...query,path}     : {...query}
     query = parentId !== undefined ? {...query,parentId} : {...query}
