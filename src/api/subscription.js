@@ -33,6 +33,7 @@ function paymentCreated({customer,subscription}){
 const EXPECTED_STATUS=["CONFIRMED","RECEIVED_IN_CASH","RECEIVED"]
 function paymentReceived(customer,status){
   return new Promise(async (resolve,reject)=>{
+    console.log("status:",status)
     if(!EXPECTED_STATUS.includes(status)){console.log("STATUS INVALIDO");return reject()}
     try{
       console.log("customer: ",customer)
