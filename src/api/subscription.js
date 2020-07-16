@@ -22,7 +22,7 @@ function paymentCreated({customer,subscription}){
       const {name,email,phone} = await rescueAsaasCostumer(customer);
       var password =  generatePassword(8) ;
       const user = await save({name,email,customer_id:customer,subscription_id:subscription,password})
-      console.log(" - Usuario cadastrado. Nome:",user.name)
+      console.log(" - Usuario cadastrado:",user)
       try{await experimentalAssign({email,name,phone,password})}
       catch{console.log("MAILCHIMP : Não foi possivel registrar aluno em audiencia experimental \n",err)}
       return resolve();
