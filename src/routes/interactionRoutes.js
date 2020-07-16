@@ -1,12 +1,15 @@
 const Router = require("express").Router();
-const {create,index,remove,vote} = require("../api/interaction")
+const {create,index,fresh,remove,vote} = require("../api/interaction")
 const {validateToken} = require("../api/student");
 Router.put("/vote/:id",validateToken,vote)
+Router.get("/fresh",fresh)
 Router.route("/")
-  .get(validateToken,index)
-  .post(validateToken,create)
+  .all(validateToken)
+  .get(index)
+  .post(create)
 Router.route("/:id")
-  .get(validateToken,index)
-  .delete(validateToken,remove)
+  .all(validateToken)
+  .get(index)
+  .delete(remove)
 
 module.exports = Router

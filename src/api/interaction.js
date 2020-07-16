@@ -43,21 +43,20 @@ function save(data){
       }catch(err){reject({status:500,errors:err})}
   })
 }
-function find(offset=0,limit=20,student = null,module=null,path=null,sort="created_at"){
+function find(offset=0,limit=99,student = null,module=null,path=null,sort="created_at"){
    return new Promise(async(resolve,reject)=>{
       var query = {}
       query = student == null ? {...query} : {...query,student};
-      query = module == null ? {...query} : {...query,module};
+      query = module == null ? {...query,module:null} : {...query,module};
       query = path == null ? {...query,parentId:null} : {...query,path}
- 
+      console.log(query)
       try{
         var data = await conn("interactions").select(queryArray)
-        .where(query)
-        .orderBy(sort, 'desc')
-        .offset(offset)
-        .limit(limit)
+        .where(query).orderBy(sort, 'desc').offset(offset).limit(limit)
         
-        data = await Promise.all(data.map(async inte=>{
+
+
+        data = await Promise.all(data.map(async inte=>{ //capture responses
           const {id,student,views} = {...inte};
           try{ // catch the student
             const st = await conn('students').select(["name","email"]).where({id:student}).first()
@@ -69,9 +68,7 @@ function find(offset=0,limit=20,student = null,module=null,path=null,sort="creat
 
 
           if(path != null){
-            try{
-              await conn("interactions").update({views:views+1}).where({path})
-            }catch(err){}
+            try{ await conn("interactions").update({views:views+1}).where({path})}catch(err){}
 
 
             var childs = []
@@ -100,7 +97,12 @@ function find(offset=0,limit=20,student = null,module=null,path=null,sort="creat
       }catch(err){reject({status:500,errors:err})} 
   }) 
 }
-
+async function fresh(req,res,next){
+   try{
+    var data = await find(0,99,null);
+    return res.json(data)
+  }catch(err){return res.status(err.status).send(err.errors)} 
+}
 async function index(req,res,next){
   const student = req.query.s, module= req.query.m,offset = req.query.o,limit = req.query.l
   const id = req.params.id
@@ -171,4 +173,4 @@ async function vote(req,res,next){
   }catch(err){return res.status(500).send(err)}
    
 }
-module.exports={create,index,remove,vote}
+module.exports={create,index,fresh,remove,vote}
