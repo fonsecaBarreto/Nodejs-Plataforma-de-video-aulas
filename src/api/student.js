@@ -17,7 +17,7 @@ function eRepliesMetrics(users){
     }catch(err){reject(err)}
   })
 }
-function find(offset=0,limit=Infinity,id=null,sort="created_at",select=QUERY_ARRAY){
+function find(offset=0,limit=999,id=null,sort="created_at",select=QUERY_ARRAY){
   return new Promise(async (resolve,reject)=>{
     var query = id == null ? {} : {id};
     try {
@@ -123,11 +123,7 @@ async function indexRanking(req,res,next){
     var all = await conn("students").select(["id","points"]).orderBy("points","desc");
     var position = all.findIndex((s)=>s.id == id);
     var ranking = await find(0,10,null,'points',["name","points","picture","id"])
-    .then(users=>{resolve(users)})
-    .catch(err=>reject([500,err]))
-    
     ranking  = [...ranking, null,null,null,null,null,null,null,null,null,null].filter((u,i)=>i<10)
-
     res.json({user:{id,name,points,picture,position},ranking})
   } catch (err) {next(err)}
 }
