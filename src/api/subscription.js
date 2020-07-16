@@ -39,14 +39,15 @@ function paymentReceived({customer,status}){
       console.log("customer: ",customer)
       const student = await conn("students").where({customer_id:customer}).select(["id","expiration","email","name"]).first();
       if(!student) {console.log("Aluno não existe!");return reject()}
+
       var {expiration,id,email,name} = {...student}
       const LAST_EXPIRATION = expiration;
       expiration = ( Number(expiration) + (30*24*60*60*1000)  )+ ""
 
       var usuario = await conn("students").where({id}).update({expiration}).returning(["id","name","expiration"])
       usuario = usuario[0];
-      console.log(`usuario ${usuario.name}, id: ${usuario.id} atualizado com sucesso`)
-      console.log(LAST_EXPIRATION,"--->",usuario[0].expiration)
+      console.log(` - Usuario '${usuario.name}', id: ${usuario.id}, atualizado com sucesso!\n`)
+      console.log(LAST_EXPIRATION,"--->",usuario.expiration)
    
       try{
         await captivatedAssign({email,name})
