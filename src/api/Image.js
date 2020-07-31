@@ -1,25 +1,7 @@
-const sharp = require("sharp");
-const multer = require("multer")
-const fs = require("fs");
-const suFixs = ["lg","md","sm"];
-const scale = .28;
-async function resize(file,{w=720,h=.56}){
-    const preName = `${file.originalname.split(".")[0]}_${Date.now()}`;
-    const payload = {key:preName,buffers:{}};
-    await Promise.all(suFixs.map(async (s,i)=>{
-        let width = Math.floor(w*(1-scale*i));
-        let height = Math.floor((width*h));
 
-        let data = await sharp(file.buffer)
-            .resize({width,height})
-            .toFormat("webp")
-            .webp({quality:80})
-            .toBuffer()
-        payload.buffers[s]=data;
-    }));
-    return payload;
-}
-function localStorage(buffer,name){
+const fs = require("fs");
+
+/* function localStorage(buffer,name){
     return new Promise((resolve,reject)=>{
         fs.writeFile(`${name}`,buffer,"base64",function(err){
             if (err) reject()
@@ -27,22 +9,7 @@ function localStorage(buffer,name){
         });  
     })    
 }
-const AWS = require("../config/aws.js")
-const s3 = new AWS.S3()
-const uploadToAws = (buffer,name)=>{
-
-    return new Promise(async (resolve,reject)=>{
-        await s3.upload({
-            Bucket:process.env.AWS_BUCKET,
-            Body:buffer,
-            ContentType: 'image/webp',
-            Key:name,
-            ACL:"public-read"
-        }).promise()
-          .then(response=>{resolve(response.Location)})
-          .catch(err=>{reject()}) 
-    })
-}
+ */
 const upload = multer({storage:multer.memoryStorage()});
 
 const image =async (req,res,next)=>{

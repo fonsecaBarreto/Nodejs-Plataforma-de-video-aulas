@@ -6,6 +6,6 @@ module.exports = app =>{
   if(app.get("NODE_ENV") == "development") app.use(morgan("tiny"))
   app.use(cors())
   app.use(bp.json());
-  app.use(bp.urlencoded({extended:false,limit:"999999mb"}))
+  app.use(bp.urlencoded({extended:false}))
   app.use(compression())
 }

@@ -8,17 +8,25 @@ const Admin = require("./adminRoutes"),
       modules_router = require("./moduleRoutes"),
       exercises_router = require("./exercisesRoutes"),
       reply_router = require("./replyRoutes"),
-      {image} = require("../api/Image"),
       {video} = require("../api/video"),
       ingresso_router = require("./ingressoRoutes"),
       interaction_router = require("./interactionRoutes");
 
 const adminAPi = require("../api/admin");
 const studentAPi = require("../api/student");
+
+
+
+const ImageController = require("../api/image/ImageController")
 module.exports = app =>{
-  /* app.post("/video", video)adminAPi.validateToken, */
-  app.post("/image",adminAPi.validateToken, image)
-  app.post("/profilepic",studentAPi.validateToken,image)
+  /* app.post("/video", video), */
+  app.post("/image",adminAPi.validateToken,ImageController.post)
+  app.post("/profilepic",studentAPi.validateToken,ImageController.post) 
+
+  /*  
+  app.delete("/image/:key",ImageController.delete)  
+  app.get("/image",ImageController.get)
+  */
 
   app.use("/interactions",interaction_router);
   app.use("/ingresso",ingresso_router)
