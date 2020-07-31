@@ -12,8 +12,8 @@ Router.get("/exercises/:module",student.validateToken,moduleController.indexModu
 Router.get("/exercisesbyModule/:module",admin.validateToken,moduleController.indexModuleExercises)
 Router.put("/archive/:id",admin.validateToken,moduleController.archive);
 
-/* .all(admin.validateToken) */
 Router.route("/")
+  .all(admin.validateToken) 
   .get(moduleController.index)
   .post(moduleController.create)
 Router.route("/:id")

@@ -17,7 +17,7 @@ const adminAPi = require("../api/admin");
 const studentAPi = require("../api/student");
 module.exports = app =>{
   /* app.post("/video", video)adminAPi.validateToken, */
-  app.post("/image", image)
+  app.post("/image",adminAPi.validateToken, image)
   app.post("/profilepic",studentAPi.validateToken,image)
 
   app.use("/interactions",interaction_router);
