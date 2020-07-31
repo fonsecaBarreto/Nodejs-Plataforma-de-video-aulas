@@ -2,10 +2,10 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
 const QUERY_SELECT = ["id","name","parentId","description","picture","notation",
-"archived","restrict","path","video","access","views","votes","attachment"];
+"archived","restrict","path","video","access","views","votes","attachment","videosource"];
 
 class Module{
-  constructor({id,name,parentId,description,picture,notation,archived,restrict,path,video,access,views,votes,attachment}){
+  constructor({id,name,parentId,description,picture,notation,archived,restrict,path,video,access,views,votes,attachment,videosource}){
     this.id=id;
     this.name =name;
     this.parentId=parentId;
@@ -20,6 +20,7 @@ class Module{
     this.votes = votes;
     this.attachment=attachment;
     this.path=path;
+    this.videosource = videosource;
   }
   async getSubordinates(){this.subordinates = await getPath(this.id);}
   async archive(){
@@ -59,6 +60,36 @@ class Module{
   }
 }
 
+
+async function validateBody({id,name,parentId,description,picture,notation,restrict,video,attachment,videosource}){
+ 
+  const errors = [];
+  if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
+  if(!isNull(notation) && isNaN(notation)) errors.push(BuildError("Numeração invalida", "notation"));
+  if(!isNull(picture) && !isObject(picture)) errors.push(BuildError("Formato de imagem inapropriado", "id"));
+  if(isNull(name) || !isString(name)) errors.push(BuildError("Nome iválido","name"));
+  if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
+  if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
+  if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
+  if(!isNull(video) && !isString(video)) errors.push(BuildError("Formato de video Incorreto", "video"));
+  if(!isNull(attachment) && !isObject(attachment)) errors.push(BuildError("Erro ao Carregar Anexo", "attachment"));
+
+  if(!isNull(videosource)){
+    if (!isObject(videosource)) return [...errors, BuildError("Video source incompleto","videosource")];
+    if(!videosource.location || !Array.isArray(videosource.location) || videosource.location.length === 0) return [...errors, BuildError("Video source deve ser um arranjo","videosource")];
+
+    const videosourceLocationParams= ["src","type","resolution"];
+
+    for(const loc of videosource.location){
+      for (const params of videosourceLocationParams){
+        if(!loc[params]) return [...errors, BuildError("Parametros pendentes em video source","videosource")];
+      }
+
+    }
+  }
+
+  return errors
+}
 //finish creation and remove ....
 class ModuleController{
   constructor(){}
@@ -113,8 +144,8 @@ class ModuleController{
   indexModuleExercises = async (req,res) =>{
     try{
       const admin = req.admin;
-      const {id,name,description,video,picture,attachment} = await conn("modules")
-      .where({path:req.params.module}).select(["id","picture","name","description","video","attachment"]).first();
+      const {id,name,description,video,picture,attachment,videosource} = await conn("modules")
+      .where({path:req.params.module}).select(["id","picture","name","description","video","videosource","attachment"]).first();
       
       const query =  (admin != undefined) ? {module:id} : {module:id,archived:false} // se nao for um admin nao encontrar os arquivados
       const exercises = await conn("exercises").where({...query})
@@ -130,7 +161,7 @@ class ModuleController{
           }catch(err){}
         }))
       }
-      res.json({id,name,description,video,picture,attachment,children:[...exercises]})
+      res.json({id,name,description,video,picture,attachment,videosource,children:[...exercises]})
 
     }catch(err){res.status(500).send(err)}
   }
@@ -142,21 +173,16 @@ class ModuleController{
       res.json(module)
     }).catch(err=>res.status(500).send(err)) 
   }
+
   async create(req,res,next){
     try{
-      const {name,parentId,description,picture,notation,restrict,video,attachment} = {...req.body}
+      console.log("creaing")
       const id = req.params.id
-      const errors = [];
-      if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
-      if(!isNull(notation) && isNaN(notation)) errors.push(BuildError("Numeração invalida", "notation"));
-      if(!isNull(picture) && !isObject(picture)) errors.push(BuildError("Formato de imagem inapropriado", "id"));
-      if(isNull(name) || !isString(name)) errors.push(BuildError("Nome iválido","name"));
-      if(isNull(description) || !isString(description)) errors.push(BuildError("Descrição iválida","description"));
-      if(!isNull(parentId) && isNaN(parentId)) errors.push(BuildError("Modulo parente invalido", "parentId"));
-      if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
-      if(!isNull(video) && !isString(video)) errors.push(BuildError("Formato de video Incorreto", "video"));
-      if(!isNull(attachment) && !isObject(attachment)) errors.push(BuildError("Erro ao Carregar Anexo", "attachment"));
+      const errors = await validateBody({...req.body,id})
+      const {name,parentId,description,picture,notation,restrict,video,attachment,videosource} = {...req.body};
+
       if(errors.length) throw [422,errors];
+
       if(parentId != undefined && parentId != null) { // if aprent Exists
         const parentExists = await conn("modules").where({id:parentId});
         if(!parentExists.length) throw [422, "Modulo Pai desconhecida"];
@@ -175,10 +201,10 @@ class ModuleController{
         const sameName = await conn("modules").where({name}); // if post check is anme already exists
         if(sameName.length) throw [422, "Modulo ja Registrada"];
   
-        const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video,attachment}).returning(QUERY_SELECT);
+        const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource}).returning(QUERY_SELECT);
         return res.json(modules)
       }else{
-        const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video,attachment}).where({id}).returning(QUERY_SELECT);
+        const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource}).where({id}).returning(QUERY_SELECT);
         return res.json(modules)
       }
       

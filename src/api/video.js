@@ -15,8 +15,11 @@ const uploadToAws = (buffer,name)=>{
           .catch(err=>{reject()}) 
     })
 }
-const upload = multer({storage:multer.memoryStorage()});
+
+  
+const upload = multer({storage:multer.memoryStorage(),limits: { fileSize: 99999999 }});
 async function video( req, res, next){
+  console.log("video")
   upload.single("video")(req,res,async (err)=>{
     try{
         if(err || req.file==undefined) throw [422, err];

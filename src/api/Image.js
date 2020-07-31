@@ -53,11 +53,10 @@ const image =async (req,res,next)=>{
             const w= req.query.w || 1080, h = req.query.h || .75;
             const payload = await resize(req.file,{w,h});
             const dir = "temp/uploads/"
-        
+
             await Promise.all(Object.keys(payload.buffers).map(async sfix=>{
                 let buf = payload.buffers[sfix];
-                let key = `${payload.key}-${sfix}.webp`
-
+                let key = `images/${payload.key}/${sfix}.webp`
                 if(process.env.NODE_ENV=="dev"){
                     await localStorage(buf,`${dir}${key}`)
                     .then(resp=>{payload[sfix]=`http://${req.headers.host}/files/${key}`})

@@ -60,14 +60,17 @@ async function index(req,res,next){
 /* session */
 const jwt = require("jsonwebtoken");
 async function genToken(req,res,next){
+ 
   try{
     var {username,password} = {...req.body};
     if(!username || username === null || username === undefined|| 
        !password || password === null || password === undefined) throw [422,"Preencha os campos corretamente"];
     var sameUsername = await conn("admins").where({username});
     if(!sameUsername.length) throw [422, "usuario desconhecido"];
+   
     const samePassword = await bcrypt.compareSync(password,sameUsername[0].password);
     if(samePassword !== true)throw [401, "Senha incorreta"]
+   
     var payload={
       username,
       id:sameUsername[0].id,
