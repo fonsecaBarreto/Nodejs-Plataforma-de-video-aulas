@@ -178,6 +178,7 @@ async function generateToken(user){
     email:user.email,
     exp: Date.now() + (30*(10**7))
   }
+  console.log(process.env.USER_TOKEN_SECRET)
   const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
 }

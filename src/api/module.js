@@ -144,8 +144,8 @@ class ModuleController{
   indexModuleExercises = async (req,res) =>{
     try{
       const admin = req.admin;
-      const {id,name,description,video,picture,attachment,videosource} = await conn("modules")
-      .where({path:req.params.module}).select(["id","picture","name","description","video","videosource","attachment"]).first();
+      const {id,name,description,video,picture,attachment,videosource,notation,parentId} = await conn("modules")
+      .where({path:req.params.module}).select(["id","picture","name","description","video","videosource","attachment","notation","parentId"]).first();
       
       const query =  (admin != undefined) ? {module:id} : {module:id,archived:false} // se nao for um admin nao encontrar os arquivados
       const exercises = await conn("exercises").where({...query})
@@ -161,7 +161,15 @@ class ModuleController{
           }catch(err){}
         }))
       }
-      res.json({id,name,description,video,picture,attachment,videosource,children:[...exercises]})
+      var before = null, after= null
+      console.log(notation)
+      console.log(parentId)
+      if(notation){
+          before = await conn('modules').where({parentId,notation:notation-1}).select(["path"]).first()
+          after =  await conn('modules').where({parentId,notation:notation+1}).select(["path"]).first()
+
+      }
+      res.json({id,name,description,video,picture,attachment,videosource,before,after,children:[...exercises]})
 
     }catch(err){res.status(500).send(err)}
   }

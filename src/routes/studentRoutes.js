@@ -20,10 +20,11 @@ Router.get("/ranking",validateToken,indexRanking)
 /* private admins*/
 Router.route("/")
   .get(admin.validateToken,index)
-  .post(admin.validateToken,create)
+  .post(create)
 Router.route("/:id")
-  .get(admin.validateToken,index)
-  .put(admin.validateToken, create)
-  .delete(admin.validateToken,remove)
+  .all(admin.validateToken)
+  .get(index)
+  .put(create)
+  .delete(remove)
 /*  */
 module.exports = Router;
