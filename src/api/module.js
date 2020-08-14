@@ -2,10 +2,10 @@
 const conn = require("../config/sqlConnection")
 const {isNull,isString,BuildError,isObject} = require("../api/validation");
 const QUERY_SELECT = ["id","name","parentId","description","picture","notation",
-"archived","restrict","path","video","access","views","votes","attachment","videosource"];
+"archived","restrict","path","video","access","views","votes","attachment","videosource","audiogroup"];
 
 class Module{
-  constructor({id,name,parentId,description,picture,notation,archived,restrict,path,video,access,views,votes,attachment,videosource}){
+  constructor({id,name,parentId,description,picture,notation,archived,restrict,path,video,access,views,votes,attachment,videosource,audiogroup}){
     this.id=id;
     this.name =name;
     this.parentId=parentId;
@@ -21,6 +21,7 @@ class Module{
     this.attachment=attachment;
     this.path=path;
     this.videosource = videosource;
+    this.audiogroup = audiogroup
   }
   async getSubordinates(){this.subordinates = await getPath(this.id);}
   async archive(){
@@ -61,7 +62,7 @@ class Module{
 }
 
 
-async function validateBody({id,name,parentId,description,picture,notation,restrict,video,attachment,videosource}){
+async function validateBody({id,name,parentId,description,picture,notation,restrict,video,attachment,videosource,audiogroup}){
  
   const errors = [];
   if(!isNull(id) && isNaN(id)) errors.push(BuildError("Id invalido", "id"));
@@ -73,6 +74,7 @@ async function validateBody({id,name,parentId,description,picture,notation,restr
   if(!isNull(restrict) && !isObject(restrict)) errors.push(BuildError("Formato de restrinção Incorreto", "restrict"));
   if(!isNull(video) && !isString(video)) errors.push(BuildError("Formato de video Incorreto", "video"));
   if(!isNull(attachment) && !isObject(attachment)) errors.push(BuildError("Erro ao Carregar Anexo", "attachment"));
+  if(!isNull(audiogroup) && isNaN(audiogroup)) errors.push(BuildError("AudioGroup Invalido", "audiogroup"));
 
   if(!isNull(videosource)){
     if (!isObject(videosource)) return [...errors, BuildError("Video source incompleto","videosource")];
@@ -187,8 +189,8 @@ class ModuleController{
       console.log("creaing")
       const id = req.params.id
       const errors = await validateBody({...req.body,id})
-      const {name,parentId,description,picture,notation,restrict,video,attachment,videosource} = {...req.body};
-
+      const {name,parentId,description,picture,notation,restrict,video,attachment,videosource, audiogroup} = req.body
+      console.log(audiogroup)
       if(errors.length) throw [422,errors];
 
       if(parentId != undefined && parentId != null) { // if aprent Exists
@@ -209,10 +211,10 @@ class ModuleController{
         const sameName = await conn("modules").where({name}); // if post check is anme already exists
         if(sameName.length) throw [422, "Modulo ja Registrada"];
   
-        const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource}).returning(QUERY_SELECT);
+        const modules = await conn('modules').insert({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource,audiogroup}).returning(QUERY_SELECT);
         return res.json(modules)
       }else{
-        const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource}).where({id}).returning(QUERY_SELECT);
+        const modules = await conn("modules").update({name,parentId,path,description,picture,notation,restrict,video,attachment,videosource,audiogroup}).where({id}).returning(QUERY_SELECT);
         return res.json(modules)
       }
       
@@ -249,26 +251,3 @@ const getPath = async (id) =>{ //get the subodinates path
   return path
 } 
 module.exports = new ModuleController();
-//module.exports = {index,create,remove,getJsonTree,indexPrime,indexModuleChilds,indexModuleExercises,archive}
-
-/*  */
-
-/*  */
-/* const toTree = async(modules,tree)=>{
-  if(!tree) tree = await modules.filter(c=>(!c.parentId));
-  tree = await Promise.all(tree.map(async parent=>{
-      parent.childrens = await toTree(modules,modules.filter(node=>node.parentId == parent.id))
-      return parent;
-  }) ) 
-  return tree;
-}
-async function getJsonTree(req,res,next){
-  try{
-    const modules = await conn("modules")
-    .select(QUERY_SELECT)
-    .orderBy('notation', 'cresc')
-    var tree = await toTree(modules);
-    res.json(tree); 
-  }catch(err){next(err)}
-} */
-/*  */
