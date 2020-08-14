@@ -144,36 +144,35 @@ class ModuleController{
 
   }
   indexModuleExercises = async (req,res) =>{
-    try{
+    try {
       const admin = req.admin;
-      const {id,name,description,video,picture,attachment,videosource,audiogroup,notation,parentId} = await conn("modules")
+      var {id,name,description,video,picture,attachment,videosource,audiogroup,notation,parentId} = await conn("modules")
       .where({path:req.params.module}).select(["id","picture","name","description","video","videosource",'audiogroup',"attachment","notation","parentId"]).first();
       
       const query =  (admin != undefined) ? {module:id} : {module:id,archived:false} // se nao for um admin nao encontrar os arquivados
+      
       const exercises = await conn("exercises").where({...query})
       .orderBy("notation","cresc")
   
+      if(audiogroup != null) audiogroup = await conn('audiogroups').where({id:audiogroup}).first();
+
       if(exercises && exercises.length){
         await Promise.all(exercises.map(async e=>{
           try{
-            //find replies for ir
             const reply = await conn("exercisesreplies").where({student:req.user.id,exercise:e.id}).first()
             if(reply) e.reply = reply
-          
           }catch(err){}
         }))
       }
+
       var before = null, after= null
-      console.log(notation)
-      console.log(parentId)
       if(notation){
           before = await conn('modules').where({parentId,notation:notation-1}).select(["path"]).first()
           after =  await conn('modules').where({parentId,notation:notation+1}).select(["path"]).first()
-
       }
-      res.json({id,name,description,video,picture,attachment,videosource,audiogroup,before,after,children:[...exercises]})
 
-    }catch(err){res.status(500).send(err)}
+      res.json({id,name,description,video,picture,attachment,videosource,audiogroup,before,after,children:[...exercises]})
+    } catch (err) { res.status(500).send() }
   }
   archive = (req,res)=>{
      this.find({id:req.params.id})
