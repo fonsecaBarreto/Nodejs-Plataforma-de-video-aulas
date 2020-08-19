@@ -46,6 +46,7 @@ class ReceivePayment {
   console.log("Novo Usuario:",user)
   return {name, email, phone, password}
 }
+const PER_MONTH = (30*24*60*60*1000);
  async function onPaymentReceived({ customer, status}){
   console.log("status:",status,"\ncustomer: ",customer)
   const student = await conn("students").where({customer_id:customer}).select(["id","expiration"]).first();
