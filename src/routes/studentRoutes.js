@@ -2,9 +2,11 @@ const Router = require("express").Router()
 const admin = require("../api/admin")
 const {index,create,remove,genToken,validateToken,
   updatePassword,indexRanking,updateSelf}= require("../api/student");
-const {payment} = require("../api/subscription")
+
+const ReceivePayment = require('../presentation/controller/payment/receive-payment')
+const payment = new ReceivePayment()
 //asass webhook
-Router.post("/pagamento",payment);
+Router.post("/pagamento",payment.handler);
 
 /* public */
 Router.post("/signin",genToken);
