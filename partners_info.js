@@ -19,12 +19,12 @@ module.exports = {
       invoiceUrl:null
     },
   },
-  sellers:{
-    vendedor1:{
-      name: 'Thais Rodrigues',
+  sellers:[
+    {
+      name: 'Vendedor um',
       percent: 30,
       walletId: null,
       invoiceUrl: 'https://www.asaas.com/i/223643968257',
     }
-  }
+  ]
 }
