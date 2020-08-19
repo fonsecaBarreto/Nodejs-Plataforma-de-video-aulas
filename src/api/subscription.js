@@ -62,6 +62,7 @@ function paymentReceived({customer,status}){
 async function payment(req,res){
     const payload = {...req.body};
     if(payload != null){ console.log("\n",payload.event,"\n-----------------------------")
+      console.log(payload)
       if(payload.event == 'PAYMENT_CREATED'){ 
         try{await paymentCreated(payload.payment)
         }catch(err){console.log(err)}
