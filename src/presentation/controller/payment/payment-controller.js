@@ -54,6 +54,7 @@ class ManageShare {
     if(!student) throw new Error("Aluno Desconhecido") 
     if(student && student.experimental === true && REF){
       console.log("Essa venda foi efetuado por um vendedor terceirizado")
+      console.log(REF.length)
       const seller = partnersInfo.sellers.find(p=>p.ref==REF)
       console.log(seller)
       if(!seller) console.log("Vendedor nao encontrado")
