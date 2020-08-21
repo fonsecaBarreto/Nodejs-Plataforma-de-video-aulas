@@ -56,8 +56,9 @@ class ManageShare {
       console.log(seller)
       if(!seller) console.log("Vendedor nao encontrado")
       else{
-        console.log("enctrado vendedor")
+        console.log(" vendedor encontrado")
         let value = currentValue * ( seller.percent / 100 )
+        console.log(value)
         let result = await tansferPayment.transfer(value, seller.walletId)
         if(result === true) currentValue -= value;
         extract.transfers.push({name:seller.name,value})  
