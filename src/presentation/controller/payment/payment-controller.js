@@ -46,6 +46,7 @@ class ManageShare {
     const tansferPayment = new TransferPayment()
 
     const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
+    console.log(student)
     if(!student) throw new Error("Aluno Desconhecido") 
     if(student && student.experimental === true && REF){
       console.log("Essa venda foi efetuado por um vendedor terceirizado")
