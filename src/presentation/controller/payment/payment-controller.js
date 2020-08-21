@@ -3,6 +3,7 @@ const {experimentalAssign,captivatedAssign} = require("../../../api/mail_api")
 const { TransferPayment } = require( '../../../providers/asaas/transfer-payment');
 const partnersInfo = require("../../../../partners_info");
 const { rescueAsaasCostumer } = require( '../../../providers/asaas/rescue-customer');
+const conn = require("../../../config/sqlConnection");
 class PaymentController {
   constructor(onPaymentCreated, onPaymentReceived){
     this.onPaymentCreated = onPaymentCreated
