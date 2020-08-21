@@ -24,10 +24,18 @@ class PaymentController {
         return created_user  // done.
       }
       else if('PAYMENT_RECEIVED' || 'PAYMENT_CONFIRMED') {    
-        try{ await this.shareManager.share(payload.payment, partnersInfo) }catch{console.error(err)}
+
+        const { netValue, customer } = payload.payment 
+        const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
+        if(!student) throw new Error("Aluno Desconhecido") 
+        
+        try{ await this.shareManager.share(netValue,customer,student,partnersInfo) }catch{console.error(err)}
+
+        if(aluno.experimental == true){
+          try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
+        }
         const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
-        try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
-        console.log("\ndone.\n")
+
         return updated_user
 
       }
@@ -37,21 +45,16 @@ class PaymentController {
 
 class ManageShare {
  
-  async share(payment,partners_info) {
-    const { netValue, customer } = payment 
+  async share(netValue,customer,student,partnersInfo) {
+
+    const tansferPayment = new TransferPayment()
     var totalValue = netValue
     var currentValue = netValue;
-    const tansferPayment = new TransferPayment()
-
     const { data } = await rescueAsaasSubscription(customer)
     var { description } = data[0] 
     description = description.trim()
     const REF = description ? description.substring(description.length - 5) : null;
-  
     const extract = { transfers:[] }
-
-    const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
-    if(!student) throw new Error("Aluno Desconhecido") 
 
     if(student.experimental === true && REF != null){
       console.log("Vendedor terceirizado")
