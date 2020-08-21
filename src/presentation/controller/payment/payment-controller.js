@@ -44,7 +44,7 @@ class ManageShare {
     description = description.trim()
     console.log(description)
     const REF = description ? description.substring(description.length - 5) : null;
-    console.log('REF:'REF)
+    console.log('REF:',REF)
     const extract = {total:netValue,transfers:[]}
     const tansferPayment = new TransferPayment()
 
