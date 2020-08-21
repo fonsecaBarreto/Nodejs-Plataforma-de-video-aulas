@@ -35,7 +35,7 @@ class ManageShare {
     const { description, netValue, customer } = payment 
     var currentValue = netValue;
 
-    const REF = description.substring(description.length - 5);
+    const REF = description ? description.substring(description.length - 5) : null;
     const extract = {total:netValue,transfers:[]}
     const tansferPayment = new TransferPayment()
 
