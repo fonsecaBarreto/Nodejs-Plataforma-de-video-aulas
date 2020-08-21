@@ -134,7 +134,7 @@ function captivatedAssign({email,name}){
       if(body.errors != null && body.errors.length) {
         var errors = body.errors.map(e=>{
           if(e.error_code == "ERROR_CONTACT_EXISTS")
-            return {param:"email",msg:"Email já Cadastrado"} ;
+            return "MailChimp: Email já Cadastrado. [ futuramente, notificar o suporte]" ;
           return e
         })
         reject([422,errors]);
