@@ -44,7 +44,7 @@ class ManageShare {
     description = description.trim()
     console.log(description)
     const REF = description ? description.substring(description.length - 5) : null;
-    console.log('REF:')
+    console.log('REF:'REF)
     const extract = {total:netValue,transfers:[]}
     const tansferPayment = new TransferPayment()
 
@@ -53,7 +53,7 @@ class ManageShare {
     if(student && student.experimental === true && REF){
       console.log("Essa venda foi efetuado por um vendedor terceirizado")
       const seller = partnersInfo.sellers.find(p=>p.ref==REF)
-      console.log(sellet)
+      console.log(seller)
       if(!seller) console.log("Vendedor nao encontrado")
       else{
         console.log("enctrado vendedor")
