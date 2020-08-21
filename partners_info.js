@@ -1,30 +1,30 @@
 module.exports = {
-  partners:{
-    lucas: {
+  mathews:{
+    name: 'Mathews Lins',
+    percent: 60,
+    walletId: 'a67e93f3-3e41-41bd-845e-064b3b7d63e4',
+    ref:null
+  },
+  partners:[
+    {
       name: 'Lucas Fonseca',
       percent: 20,
       walletId: 'a252b132-4ce7-466e-afce-d3b7fbcdf245',
-      invoiceUrl:null
+      ref:null
     },
-    mathews:{
-      name: 'Mathews Lins',
-      percent: 60,
-      walletId: 'a67e93f3-3e41-41bd-845e-064b3b7d63e4',
-      invoiceUrl:null
-    },
-    thais:{
-      name: 'Thais Rodrigues',
+    {
+      name: 'Lucas Fonseca',
       percent: 20,
-      walletId: null,
-      invoiceUrl:null
-    },
-  },
+      walletId: 'a252b132-4ce7-466e-afce-d3b7fbcdf245',
+      ref:null
+    }
+  ],
   sellers:[
     {
-      name: 'Vendedor um',
+      name: 'Vendedor Lucas',
       percent: 30,
-      walletId: null,
-      invoiceUrl: 'https://www.asaas.com/i/223643968257',
+      walletId: 'a252b132-4ce7-466e-afce-d3b7fbcdf245',
+      ref: '#00S1',
     }
   ]
 }

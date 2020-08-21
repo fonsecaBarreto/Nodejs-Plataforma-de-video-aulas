@@ -77,8 +77,9 @@ function save({id,name,email,password,picture,points,expiration,customer_id,subs
     }
     if(isNull(id)){//insertion
       expiration = expiration+"" || ( Date.now() + (6*(10**8)) ) + ""
+      const experimental= true
       try{
-        const result = await conn("students").insert({name,email,password,picture,points,path,expiration,customer_id,subscription_id})
+        const result = await conn("students").insert({name,email,password,picture,points,path,expiration,customer_id,subscription_id,experimental})
         .returning(QUERY_ARRAY);
         return resolve(result[0])
       }catch(err){return reject([500,err])}

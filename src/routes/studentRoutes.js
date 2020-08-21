@@ -3,10 +3,13 @@ const admin = require("../api/admin")
 const {index,create,remove,genToken,validateToken,
   updatePassword,indexRanking,updateSelf}= require("../api/student");
 
-const ReceivePayment = require('../presentation/controller/payment/receive-payment')
-const payment = new ReceivePayment()
+const paymentController = require('../presentation/controller/payment/payment-interface')
 //asass webhook
-Router.post("/pagamento",payment.handler);
+Router.post("/pagamento",async (req,res)=>{
+  const result = await paymentController.handler(req)
+  console.log('done.', result)
+  res.sendStatus(200)
+});
 
 /* public */
 Router.post("/signin",genToken);
