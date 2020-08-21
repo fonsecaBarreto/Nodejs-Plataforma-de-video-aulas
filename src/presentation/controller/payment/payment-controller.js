@@ -3,6 +3,7 @@ const {experimentalAssign,captivatedAssign} = require("../../../api/mail_api")
 const { TransferPayment } = require( '../../../providers/asaas/transfer-payment');
 const partnersInfo = require("../../../../partners_info");
 const { rescueAsaasCostumer } = require( '../../../providers/asaas/rescue-customer');
+const { rescueAsaasSubscription } = require( '../../../providers/asaas/rescue-subscription');
 const conn = require("../../../config/sqlConnection");
 class PaymentController {
   constructor(onPaymentCreated, onPaymentReceived){
@@ -22,8 +23,8 @@ class PaymentController {
         return { statusCode:200, body: created_user } // done.
 
       } else if('PAYMENT_RECEIVED' || 'PAYMENT_CONFIRMED') {    
-        const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
-        try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
+        //const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
+        //try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
         const trasnfer = await this.shareManager.share(payload.payment, partnersInfo)
         return { statusCode:200, body: {updated_user, trasnfer} }
       } 
@@ -32,19 +33,24 @@ class PaymentController {
 }
 
 class ManageShare {
+ 
   async share(payment,partners_info) {
+    console.log("sharing...")
     if(!payment) throw new Error("não foi encontrado Configurações de partilhamento")
-    const { description, netValue, customer } = payment 
+    const { netValue, customer } = payment 
     var currentValue = netValue;
-
+    const { data } = await rescueAsaasSubscription(customer)
+    var { description } = data[0] 
+    description = description.trim()
+    console.log(description)
     const REF = description ? description.substring(description.length - 5) : null;
-    console.log('REF:',REF)
+    console.log('REF:')
     const extract = {total:netValue,transfers:[]}
     const tansferPayment = new TransferPayment()
 
     const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
 
-    if(student.experimental === true && REF){
+    if(student && student.experimental === true && REF){
       console.log("Essa venda foi efetuado por um vendedor terceirizado")
       const seller = partnersInfo.sellers.find(p=>p.ref==REF)
       console.log(sellet)
