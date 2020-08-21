@@ -15,6 +15,7 @@ class PaymentController {
       const payload = req.body;
       if(payload == null || payload.payment == null ) throw "Pagamento não identificado"
       console.log("\n * ",payload.event," * \n");
+      console.log(payload.payment)
       if(payload.event === "PAYMENT_CREATED" ) {
         const created_user = await this.onPaymentCreated.handler(payload.payment) // insert on db
         try { await experimentalAssign(created_user) } catch(err){console.error(err)} // mail chimp
