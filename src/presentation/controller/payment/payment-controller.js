@@ -16,7 +16,6 @@ class PaymentController {
       const payload = req.body;
       if(payload == null || payload.payment == null ) throw "Pagamento não identificado"
       console.log("\n * ",payload.event," * \n");
-      console.log(payload.payment)
       if(payload.event === "PAYMENT_CREATED" ) {
         const created_user = await this.onPaymentCreated.handler(payload.payment) // insert on db
         try { await experimentalAssign(created_user) } catch(err){console.error(err)} // mail chimp
@@ -35,21 +34,19 @@ class PaymentController {
 class ManageShare {
  
   async share(payment,partners_info) {
-    console.log("sharing...")
     if(!payment) throw new Error("não foi encontrado Configurações de partilhamento")
     const { netValue, customer } = payment 
     var currentValue = netValue;
     const { data } = await rescueAsaasSubscription(customer)
     var { description } = data[0] 
     description = description.trim()
-    console.log(description)
     const REF = description ? description.substring(description.length - 5) : null;
     console.log('REF:',REF)
     const extract = {total:netValue,transfers:[]}
     const tansferPayment = new TransferPayment()
 
     const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
-
+    if(!student) throw new Error("Aluno Desconhecido") 
     if(student && student.experimental === true && REF){
       console.log("Essa venda foi efetuado por um vendedor terceirizado")
       const seller = partnersInfo.sellers.find(p=>p.ref==REF)
