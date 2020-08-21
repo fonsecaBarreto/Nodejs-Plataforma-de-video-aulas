@@ -7,7 +7,7 @@ const paymentController = require('../presentation/controller/payment/payment-in
 //asass webhook
 Router.post("/pagamento",async (req,res)=>{
   const result = await paymentController.handler(req)
-  console.log('done.', result)
+  console.log(result)
   res.sendStatus(200)
 });
 
