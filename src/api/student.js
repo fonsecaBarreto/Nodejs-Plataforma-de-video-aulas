@@ -2,7 +2,7 @@ const conn = require("../config/sqlConnection");
 const {isNull, BuildError, isString ,isEmail, isObject} = require("./validation")
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-var QUERY_ARRAY = ["id","name","email","points","picture","path","expiration","customer_id","expiration","subscription_id"]
+var QUERY_ARRAY = ["id","name","email","points","picture","path","expiration","customer_id","expiration","subscription_id","experimental"]
 
 /*  from admin  */
 function eRepliesMetrics(users){
