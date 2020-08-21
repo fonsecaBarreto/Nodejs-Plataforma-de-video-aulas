@@ -22,10 +22,12 @@ class PaymentController {
         return { statusCode:200, body: created_user } // done.
 
       } else if('PAYMENT_RECEIVED' || 'PAYMENT_CONFIRMED') {    
-        const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
+        try{
+          const transfer = await this.shareManager.share(payload.payment, partnersInfo)}catch{console.error(err)}
+          console.log(transfer)
+          const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
         try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
-        const trasnfer = await this.shareManager.share(payload.payment, partnersInfo)
-        return { statusCode:200, body: {updated_user, trasnfer} }
+        return { statusCode:200, body: {updated_user} }
       } 
     }catch(err){ return { statusCode:500, body: err } }
   }
