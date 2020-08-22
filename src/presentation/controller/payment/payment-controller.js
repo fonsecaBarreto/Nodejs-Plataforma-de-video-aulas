@@ -68,7 +68,7 @@ class ManageShare {
       }
     }
     const sellerRemainingValue = currentValue
-    for(const partner of partners_info.partners) {
+    for(const partner of partnersInfo.partners) {
       let value = sellerRemainingValue * ( partner.percent / 100 )
       let result = await tansferPayment.transfer(value, partner.walletId)
       if(result === true) currentValue -= value
