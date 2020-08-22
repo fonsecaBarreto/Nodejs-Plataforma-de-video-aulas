@@ -59,7 +59,7 @@ class ManageShare {
     const extract = { transfers:[] }
 
     if(student.experimental === true && REF != null){
-      console.log("Vendedor terceirizado")
+      console.log('REF:',REF,'./')
       const seller = partnersInfo.sellers.find(p=>p.ref==REF)
       if(!seller) console.log(" * Vendedor nao encontrado")
       else{
