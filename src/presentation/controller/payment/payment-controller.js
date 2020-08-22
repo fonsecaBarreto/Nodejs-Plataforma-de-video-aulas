@@ -76,7 +76,7 @@ class ManageShare {
       if(result === true) currentValue -= value
       extract.transfers.push({name:partner.name,value})
     } 
-    extract.rest = currentValue
+    
     console.log('\ntransferencia: \n','\ntotalValue:',totalValue,
     '\nrest: ', currentValue,'\n',extract.transfers)
     return

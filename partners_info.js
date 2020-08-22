@@ -23,7 +23,7 @@ module.exports = {
     {
       name: 'Nicolas',
       percent: 30,
-      walletId: '542d30bd092d458ef0c6a3280d94e0cd05ec359667f5454b48b9ef7854ec4f31',
+      walletId: 'ef803023-5397-4c4b-a4db-a82e4ff17744',
       ref: '#00S1',
     }
   ]
