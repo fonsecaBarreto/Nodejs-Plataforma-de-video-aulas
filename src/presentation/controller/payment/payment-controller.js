@@ -31,7 +31,7 @@ class PaymentController {
         
         try{ await this.shareManager.share(netValue,customer,student,partnersInfo) }catch(err){console.error(err)}
 
-        if(aluno.experimental == true){
+        if(student.experimental == true){
           try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
         }
         const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
