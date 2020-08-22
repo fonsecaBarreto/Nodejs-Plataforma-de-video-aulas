@@ -31,11 +31,13 @@ class PaymentController {
         
         try{ await this.shareManager.share(netValue,customer,student,partnersInfo) }catch(err){console.error(err)}
 
-        if(student.experimental == true){
+        const experimental = student.experimental
+        
+        const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
+        
+        if(experimental == true){
           try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
         }
-        const updated_user = await this.onPaymentReceived.handler(payload.payment) // update credits
-
         return updated_user
 
       }
