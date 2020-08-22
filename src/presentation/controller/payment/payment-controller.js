@@ -29,7 +29,7 @@ class PaymentController {
         const student = await conn("students").where({customer_id:customer}).select(["experimental"]).first();
         if(!student) throw new Error("Aluno Desconhecido") 
         
-        try{ await this.shareManager.share(netValue,customer,student,partnersInfo) }catch{console.error(err)}
+        try{ await this.shareManager.share(netValue,customer,student,partnersInfo) }catch(err){console.error(err)}
 
         if(aluno.experimental == true){
           try { await captivatedAssign(updated_user) } catch(err){console.error(err)}  // mail chimp
