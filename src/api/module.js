@@ -1,6 +1,6 @@
 "use strict";
 const conn = require("../config/sqlConnection")
-const {isNull,isString,BuildError,isObject} = require("../api/validation");
+const {isNull, isString, BuildError, isObject} = require("../api/validation");
 const QUERY_SELECT = ["id","name","parentId","description","picture","notation",
 "archived","restrict","path","video","access","views","votes","attachment","videosource","audiogroup"];
 

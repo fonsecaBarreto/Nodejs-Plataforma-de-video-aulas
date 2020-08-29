@@ -34,6 +34,7 @@ function find(offset=0,limit=999,id=null,sort="created_at",select=QUERY_ARRAY){
 }
 /* methods */
   const Validator = require("fastest-validator");
+const { clearCounters } = require("../config/sqlConnection");
   const v = new Validator();
   const CreateSchema = {
     name:            {type:"string"},
@@ -174,57 +175,54 @@ async function generateToken(user){
   var payload = {
     id: user.id,
     name: user.name,
-    points:user.points,
-    picture:user.picture,
     email:user.email,
     exp: Date.now() + (30*(10**7))
   }
-  console.log(process.env.USER_TOKEN_SECRET)
-  const token = jwt.sign(payload, process.env.USER_TOKEN_SECRET)
+  const token = await jwt.sign(payload, process.env.USER_TOKEN_SECRET)
   return token 
 }
 async function genToken(req, res, next) {
   try {
 
-    var {email, password} = {...req.body};
+    var {email, password} = req.body
     const errors = []
     if (isNull(email)) errors.push(BuildError("Usuário inválido","email"))
     if (isNull(password)) errors.push(BuildError("Senha inválida","password"));
     if(errors.length) throw [422, errors];
-    const user = await conn("students").where({email}).select(["id","name","points","picture","email","password","authorized","expiration"]).first();
-    if (!user) throw [422, "Usuário desconhecido"];
 
+    const user = await conn("students").where({email}).select(["id","name","email","password","expiration"]).first();
+    if (!user) throw [422, "Usuário desconhecido"];
+    console.log("aluno: ", user.name, "Acaba de entrar")
     const samePassword = await bcrypt.compareSync(password, user.password);
     if (samePassword !== true) throw [401, "Senha incorreta"] 
     var resto = Number(user.expiration) - Date.now();
-    console.log(resto)
+
     if(resto <= 0) throw [401,"Conta Desativada, entre em contato com o Suporte"]
     const token = await generateToken(user);
-    res.json({accessToken: token})
+    return res.json({accessToken: token})
+
   } catch (err) {
-    next(err)
+     next(err) 
   }
 }
 async function validateToken(req, res, next) {
   try {
-    console.log("validating")
     const authorizationHeader = req.headers.authorization
     if (!authorizationHeader || authorizationHeader === undefined) throw [401, "Acesso Negado!"];
     const parts = authorizationHeader.split(" ");
-    if (parts.length === 2 && parts[0] === "bearer") {
-      jwt.verify(parts[1], process.env.USER_TOKEN_SECRET, (err, decoded) => {
-        if (err) throw [401, "Acesso Negado"];
-        if ((decoded.exp - Date.now()) <= 0) throw [403, "Acesso expirado"]
-   
-        req.user = decoded;
-        return next()
-      })
-    } else {
-      throw [401, "Acesso negados"]
-    }
-  } catch (err) {
-    next(err)
-  }
+    if (parts.length !== 2 && parts[0] !== "bearer") throw [401, "Access Denied"]
+      const token = parts[1]
+      console.log(token)
+      const secret = process.env.USER_TOKEN_SECRET
+      const decoded = await jwt.verify(token,secret)
+      console.log(decoded)
+      const { id, name, email, exp } = decoded
+      if ((exp - Date.now()) <= 0) throw [403, "Acesso expirado"];
+      const user = await conn("students").where({id, name, email}).select(["name","points","picture","expiration", "email"]).first();
+      req.user = {id, exp, ...user};
+      console.log(req.user.name, ': Validated token')
+      return next() 
+  } catch (err) {  next([401, "Acesso Negado"]) }
 }
 
 /* student self */
