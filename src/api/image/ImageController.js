@@ -49,6 +49,8 @@ class ImageController {
       try{
         if(err) return res.status(500).send(err)
         if(req.file === undefined) return res.status(400).send("bad request");
+        console.log(req.file)
+        console.log(req.file.buffer)
         const w= req.query.w || 1080, h = req.query.h || .75, f = req.query.f || '';
         const payload = await ProcessImage.resize(req.file,{w,h});
 
